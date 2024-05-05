@@ -1,0 +1,26 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+recipe-fe/node_modules
+recipe-fe/.pnp
+recipe-fe/.pnp.js
+
+# testing
+recipe-fe/coverage
+
+# production
+recipe-fe/build
+
+# misc
+recipe-fe/.DS_Store
+recipe-fe/.env.local
+recipe-fe/.env.development.local
+recipe-fe/.env.test.local
+recipe-fe/.env.production.local
+
+recipe-fe/npm-debug.log*
+recipe-fe/yarn-debug.log*
+recipe-fe/yarn-error.log*
+
+/venv/
+/.idea/

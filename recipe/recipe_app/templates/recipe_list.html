@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe List</title>
+</head>
+<body>
+<h1>Recipes</h1>
+
+<!-- Форма для создания нового рецепта -->
+<form method="post" action="{% url 'create_recipe' %}">
+    {% csrf_token %}
+    {{ recipe_form.as_p }}
+    <h3>Ingredients:</h3>
+    {% for ingredient in ingredients %}
+    <label for="ingredient_{{ ingredient.id }}">{{ ingredient.name }}</label>
+    <input type="number" name="ingredients" value="{{ ingredient.id }}" hidden>
+    <input type="number" name="ingredient_quantity_{{ ingredient.id }}" min="1" value="1">
+    <br>
+    {% endfor %}
+    <button type="submit">Create Recipe</button>
+</form>
+
+<!-- Форма для создания нового ингредиента -->
+<form method="post" action="{% url 'create_ingredient' %}">
+    {% csrf_token %}
+    <label for="ingredient_name">Ingredient Name:</label>
+    <input type="text" id="ingredient_name" name="name">
+    <button type="submit">Create Ingredient</button>
+</form>
+
+<!-- Вывод сообщений об успешном создании рецепта или ингредиента -->
+{% if messages %}
+<ul>
+    {% for message in messages %}
+    <li>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+</body>
+</html>

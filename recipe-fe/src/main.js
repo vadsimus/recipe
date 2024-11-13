@@ -29,12 +29,11 @@ const MyComponent = () => {
   const [openModal, setOpenModal]=useState(false);
 
   useEffect(() => {
-    // Получение данных из API
-    axios.get('http://localhost:8000/recipies/')
+    axios.get('http://localhost:8000/recipes/')
       .then(response => {
-        console.log(response.data.data)
-        setListData(response.data.data);
-        setFilteredData(response.data.data);
+        console.log(response.data)
+        setListData(response.data);
+        setFilteredData(response.data);
       })
       .catch(error => {
         console.error('Error fetching data:', error);

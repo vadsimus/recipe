@@ -1,117 +1,88 @@
 import json
 from decimal import Decimal
 
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-
-from .forms import IngredientForm, RecipeForm
+from .serializers import IngredientSerializer, RecipeSerializer
 from .models import Recipe, Ingredient, IngredientRecipe
 
 
-def recipe_list(request):
-    recipe_form = RecipeForm()
-    ingredient_form = IngredientForm()
-    ingredients = Ingredient.objects.all()  # Пример queryset для ингредиентов
-    return render(request, 'recipe_list.html', {'recipe_form': recipe_form, 'ingredient_form': ingredient_form, 'ingredients': ingredients})
+# Viewset for Recipe
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
 
-
-def create_recipe(request):
-    ingredients = Ingredient.objects.all()  # Получаем все ингредиенты
-    if request.method == 'POST':
-        recipe_form = RecipeForm(request.POST)
-        ingredient_form = IngredientForm(request.POST)
-        if recipe_form.is_valid() and ingredient_form.is_valid():
-            recipe = recipe_form.save()  # Сохраняем рецепт
-            for ingredient in ingredients:
-                ingredient_id = str(ingredient.id)
-                ingredient_quantity = request.POST.get('ingredient_quantity_' + ingredient_id)
-                if ingredient_quantity:
-                    recipe.ingredients.add(ingredient, through_defaults={'quantity': ingredient_quantity})
-            return redirect('recipe_list')
-    else:
-        recipe_form = RecipeForm()
-        ingredient_form = IngredientForm()
-    return render(request, 'recipe_list.html', {'recipe_form': recipe_form, 'ingredient_form': ingredient_form, 'ingredients': ingredients})
-
-
-
-def create_ingredient(request):
-    if request.method == 'POST':
-        # print('Here')
-        form = IngredientForm(request.POST)
-        # print(form.cleaned_data['name'])
-        if form.is_valid():
-            print('Here, valid')
-            form.save()
-            return redirect('recipe_list')
-    return redirect('recipe_list')# Перенаправляем пользователя на список рецептов после создания ингредиента
-    # else:
-    #     form = IngredientForm()
-    # return render(request, 'create_ingredient.html', {'form': form})
-
-
-
-def recipies(request):
-    recipes = Recipe.objects.all()
-    res = []
-    for recipe in recipes:
-        ingredients_list = []
-        for ingredient_recipe in recipe.ingredientrecipe_set.all():
-            ingredients_list.append({
-                'name': ingredient_recipe.ingredient.name,
-                'amount': ingredient_recipe.ingredient_amount,
-                'cost': ingredient_recipe.ingredient.cost
+    # Additional route to list recipes with ingredient details
+    @action(detail=False, methods=['get'])
+    def list_recipes_with_ingredients(self, request):
+        recipes = Recipe.objects.all()
+        data = []
+        for recipe in recipes:
+            ingredients_list = [
+                {
+                    'name': ir.ingredient.name,
+                    'amount': ir.ingredient_amount,
+                    'cost': ir.ingredient.cost
+                }
+                for ir in recipe.ingredientrecipe_set.all()
+            ]
+            data.append({
+                'id': recipe.id,
+                'name': recipe.name,
+                'image_url': recipe.image_url,
+                'description': recipe.description,
+                'ingredients': ingredients_list
             })
-        res.append({
-            'id': recipe.id,
-            'name': recipe.name,
-            'image_url': recipe.image_url,
-            'description': recipe.description,
-            'ingredients': ingredients_list
+        return Response({'result': 'ok', 'data': data}, status=status.HTTP_200_OK)
+
+
+# Viewset for Ingredient
+class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+
+
+# Function-based view to create an ingredient
+@api_view(['POST'])
+def create_ingredient(request):
+    serializer = IngredientSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'result': 'ok'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# APIView to create a recipe with ingredients
+class CreateRecipeView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        recipe_serializer = RecipeSerializer(data={
+            'name': data.get('title'),
+            'image_url': data.get('image_url'),
+            'description': data.get('description')
         })
-    return JsonResponse({'result': 'ok', 'data': res})
+
+        if recipe_serializer.is_valid():
+            recipe = recipe_serializer.save()
+            ingredients = data.get('ingredients', [])
+            for ingredient_data in ingredients:
+                ingredient = Ingredient.objects.get(pk=ingredient_data['ingredient'])
+                IngredientRecipe.objects.create(
+                    recipe=recipe,
+                    ingredient=ingredient,
+                    ingredient_amount=ingredient_data['quantity']
+                )
+            return Response({'result': 'ok'}, status=status.HTTP_201_CREATED)
+        return Response(recipe_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# API to get all ingredients as JSON
+@api_view(['GET'])
 def get_ingredients(request):
     ingredients = Ingredient.objects.all()
-    return JsonResponse({'result': 'ok', 'data': [{'id': i.id, 'name': i.name, 'cost': i.cost} for i in ingredients]})
-
-
-@csrf_exempt
-def ingredient(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        # print(Decimal(int(data.get('price'))))
-        ingr = Ingredient(name=data.get('name'), cost=Decimal(int(data.get('price'))))
-        ingr.save()
-        return JsonResponse({'result': 'ok'})
-
-
-@csrf_exempt
-def recipe(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        print(data)
-        recipe = Recipe.objects.create(
-            name=data.get('title'),
-            image_url=data.get('image_url'),
-            description=data.get('description')
-        )
-        recipe.save()
-        for ingredient_data in data['ingredients']:
-            ingredient_id = ingredient_data['ingredient']
-            ingredient_amount = ingredient_data['quantity']
-
-            ingredient = Ingredient.objects.get(pk=ingredient_id)
-
-            ingredient_recipe = IngredientRecipe.objects.create(
-                recipe=recipe,
-                ingredient=ingredient,
-                ingredient_amount=ingredient_amount
-            )
-            ingredient_recipe.save()
-
-
-        return JsonResponse({'result': 'ok'})
+    serializer = IngredientSerializer(ingredients, many=True)
+    return Response({'result': 'ok', 'data': serializer.data}, status=status.HTTP_200_OK)

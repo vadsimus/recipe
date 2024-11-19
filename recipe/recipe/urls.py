@@ -15,18 +15,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
 from recipe_app import views
 
+# Setting up the DRF router for viewsets
+router = DefaultRouter()
+router.register(r'recipes', views.RecipeViewSet, basename='recipe')
+router.register(r'ingredients', views.IngredientViewSet, basename='ingredient')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.recipe_list, name='recipe_list'),
-    path('create-recipe/', views.create_recipe, name='create_recipe'),
-    path('recipies/', views.recipies, name='create_recipe'),
-    path('create-ingredient/', views.create_ingredient, name='create_ingredient'),
-    path('get_ingredients/', views.get_ingredients, name='get_ingredients'),
-    path('ingredient/', views.ingredient, name='ingredient'),
-    path('recipe/', views.recipe, name='recipe'),
+    path('', include(router.urls)),  # Includes the viewset routes
+    path('recipes/create/', views.CreateRecipeView.as_view(), name='create_recipe'),  # Custom recipe creation view
+    path('get_ingredients/', views.get_ingredients, name='get_ingredients'),  # Simple ingredient list view
+    path('create_ingredient/', views.create_ingredient, name='create_ingredient'),  # Simple ingredient creation view
 ]
 

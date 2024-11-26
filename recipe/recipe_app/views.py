@@ -1,12 +1,16 @@
 import json
 from decimal import Decimal
 
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
 
-from .serializers import IngredientSerializer, RecipeSerializer
+from .serializers import IngredientSerializer, RecipeSerializer, UserRegistrationSerializer
 from .models import Recipe, Ingredient, IngredientRecipe
 
 
@@ -86,3 +90,55 @@ def get_ingredients(request):
     ingredients = Ingredient.objects.all()
     serializer = IngredientSerializer(ingredients, many=True)
     return Response({'result': 'ok', 'data': serializer.data}, status=status.HTTP_200_OK)
+
+
+# API for user registration
+@api_view(['POST'])
+def register_user(request):
+    serializer = UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user_name = serializer.validated_data['username']
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'error': f"Email '{email}' is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+        User.objects.create_user(username=user_name, email=email, password=password)
+        # User.save()
+        return Response({'result': 'ok', 'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def login_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    if not username or not password:
+        return Response(
+            {'error': 'Both username and password are required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        token, created = Token.objects.get_or_create(user=user)
+        return Response(
+            {'result': 'ok', 'token': token.key},
+            status=status.HTTP_200_OK
+        )
+    else:
+        return Response(
+            {'error': 'Invalid username or password.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
+    try:
+        request.user.auth_token.delete()
+        return Response({'result': 'ok', 'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+    except AttributeError:
+        return Response({'error': 'User is not logged in.'}, status=status.HTTP_400_BAD_REQUEST)

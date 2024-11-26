@@ -31,5 +31,7 @@ urlpatterns = [
     path('recipes/create/', views.CreateRecipeView.as_view(), name='create_recipe'),  # Custom recipe creation view
     path('get_ingredients/', views.get_ingredients, name='get_ingredients'),  # Simple ingredient list view
     path('create_ingredient/', views.create_ingredient, name='create_ingredient'),  # Simple ingredient creation view
+    path('api/register/', views.register_user, name='register_user'),
+    path('api/login/', views.login_user, name='login_user'),
+    path('api/logout/', views.logout_user, name='logout_user')
 ]
-

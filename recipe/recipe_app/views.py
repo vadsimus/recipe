@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,22 +17,42 @@ from .models import Recipe, Ingredient, IngredientRecipe
 
 # Viewset for Recipe
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Recipe.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        recipe = serializer.save(user=self.request.user)
+
+        ingredients_data = self.request.data.get('ingredients', [])
+        for ingredient_data in ingredients_data:
+            try:
+                ingredient = Ingredient.objects.get(pk=ingredient_data['ingredient'], user=self.request.user)
+            except Ingredient.DoesNotExist:
+                raise ValidationError({'ingredient': f"Ingredient with id {ingredient_data['ingredient']} does not exist or does not belong to the user."})
+
+            IngredientRecipe.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                ingredient_amount=ingredient_data['quantity']
+            )
 
     # Additional route to list recipes with ingredient details
     @action(detail=False, methods=['get'])
     def list_recipes_with_ingredients(self, request):
-        recipes = Recipe.objects.all()
+        recipes = self.get_queryset().prefetch_related('ingredient_recipes__ingredient')
+
         data = []
         for recipe in recipes:
             ingredients_list = [
                 {
-                    'name': ir.ingredient.name,
-                    'amount': ir.ingredient_amount,
-                    'cost': ir.ingredient.cost
+                    'name': ingredient_recipe.ingredient.name,
+                    'amount': ingredient_recipe.ingredient_amount,
+                    'cost': ingredient_recipe.ingredient.cost
                 }
-                for ir in recipe.ingredientrecipe_set.all()
+                for ingredient_recipe in recipe.ingredient_recipes.all()
             ]
             data.append({
                 'id': recipe.id,
@@ -40,30 +61,40 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'description': recipe.description,
                 'ingredients': ingredients_list
             })
+
         return Response({'result': 'ok', 'data': data}, status=status.HTTP_200_OK)
 
 
 # Viewset for Ingredient
 class IngredientViewSet(viewsets.ModelViewSet):
-    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Ingredient.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 # Function-based view to create an ingredient
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_ingredient(request):
     serializer = IngredientSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(user=request.user)
         return Response({'result': 'ok'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # APIView to create a recipe with ingredients
 class CreateRecipeView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         data = request.data
+
         recipe_serializer = RecipeSerializer(data={
             'name': data.get('title'),
             'image_url': data.get('image_url'),
@@ -71,23 +102,34 @@ class CreateRecipeView(APIView):
         })
 
         if recipe_serializer.is_valid():
-            recipe = recipe_serializer.save()
+            recipe = recipe_serializer.save(user=request.user)
+
             ingredients = data.get('ingredients', [])
             for ingredient_data in ingredients:
-                ingredient = Ingredient.objects.get(pk=ingredient_data['ingredient'])
+                try:
+                    ingredient = Ingredient.objects.get(pk=ingredient_data['ingredient'], user=request.user)
+                except Ingredient.DoesNotExist:
+                    return Response(
+                        {'error': f"Ingredient with id {ingredient_data['ingredient']} does not exist or does not belong to the user."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
                 IngredientRecipe.objects.create(
                     recipe=recipe,
                     ingredient=ingredient,
                     ingredient_amount=ingredient_data['quantity']
                 )
-            return Response({'result': 'ok'}, status=status.HTTP_201_CREATED)
+
+            return Response({'result': 'ok', 'recipe_id': recipe.id}, status=status.HTTP_201_CREATED)
+
         return Response(recipe_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # API to get all ingredients as JSON
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_ingredients(request):
-    ingredients = Ingredient.objects.all()
+    ingredients = Ingredient.objects.filter(user=request.user)
     serializer = IngredientSerializer(ingredients, many=True)
     return Response({'result': 'ok', 'data': serializer.data}, status=status.HTTP_200_OK)
 

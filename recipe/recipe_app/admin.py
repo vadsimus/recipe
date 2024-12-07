@@ -1,3 +1,24 @@
 from django.contrib import admin
 
 # Register your models here.
+
+from django.contrib import admin
+from .models import Recipe, Ingredient, IngredientRecipe
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
+
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'user')
+    search_fields = ('name', 'user__username')
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'cost', 'user')
+    search_fields = ('name', 'user__username')
+
+
+@admin.register(IngredientRecipe)
+class IngredientRecipeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recipe', 'ingredient', 'ingredient_amount')
+    search_fields = ('recipe__name', 'ingredient__name')
+

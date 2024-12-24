@@ -96,6 +96,9 @@ if os.getenv('USE_MYSQL', 'false').lower() == 'true':
         'PASSWORD': os.getenv('MYSQL_PASSWORD', 'password'),
         'HOST': os.getenv('MYSQL_HOST', 'localhost'),
         'PORT': os.getenv('MYSQL_PORT', '3306'),
+        'TEST': {
+            'NAME': 'test_db',
+        },
     }
 
 # Password validation

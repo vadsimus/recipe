@@ -38,8 +38,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'recipe_app',
-    'rest_framework.authtoken'
-
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -51,7 +50,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
 ]
 
 CORS_ALLOWED_ORIGINS = [

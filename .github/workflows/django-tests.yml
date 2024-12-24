@@ -50,6 +50,11 @@ jobs:
           echo "Waiting for MySQL..."
           sleep 2
         done
+    - name: Install dependencies
+      working-directory: ./recipe
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
     - name: Run migrations
       working-directory: ./recipe
@@ -71,4 +76,4 @@ jobs:
         MYSQL_PASSWORD: password
         MYSQL_HOST: 127.0.0.1
         MYSQL_PORT: 3306
-      run: pytest
+      run: python manage.py test

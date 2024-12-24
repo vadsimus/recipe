@@ -1,3 +1,10 @@
+name: Django Backend Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,8 +20,11 @@ jobs:
         ports:
           - 3306:3306
         options: >-
+          --health-cmd="mysqladmin ping -h localhost -u django --password=password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
           --default-authentication-plugin=mysql_native_password
-          --init-file=/docker-entrypoint-initdb.d/init.sql
 
     steps:
     - name: Checkout code
@@ -25,10 +35,7 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install MySQL client dependencies
-      run: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev build-essential
-
-    - name: Install Python dependencies
+    - name: Install dependencies
       working-directory: ./recipe
       run: |
         python -m pip install --upgrade pip
@@ -45,7 +52,7 @@ jobs:
         MYSQL_PORT: 3306
       run: python manage.py migrate
 
-    - name: Run pytest
+    - name: Run unit tests
       working-directory: ./recipe
       env:
         USE_MYSQL: true
@@ -54,4 +61,4 @@ jobs:
         MYSQL_PASSWORD: password
         MYSQL_HOST: 127.0.0.1
         MYSQL_PORT: 3306
-      run: pytest
+      run: python manage.py test

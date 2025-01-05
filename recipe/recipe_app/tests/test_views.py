@@ -23,8 +23,8 @@ class RecipeAPITestCase(APITestCase):
             "image_url": "http://example.com/image.jpg",
             "ingredients": [
                 {"ingredient": self.ingredient1.id, "quantity": 1},
-                {"ingredient": self.ingredient2.id, "quantity": 2}
-            ]
+                {"ingredient": self.ingredient2.id, "quantity": 2},
+            ],
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

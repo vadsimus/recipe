@@ -18,13 +18,14 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies
+COPY requirements.txt /app/requirements.txt
+RUN python -m venv /app/.venv \
+    && /app/.venv/bin/pip install --upgrade pip setuptools wheel \
+    && /app/.venv/bin/pip install -r requirements.txt
+
 # Copy application files
 COPY . .
-
-# Set up Python environment
-RUN python -m venv .venv \
-    && .venv/bin/pip install --upgrade pip setuptools wheel \
-    && .venv/bin/pip install -r requirements.txt
 
 # Expose the application port
 EXPOSE 8000

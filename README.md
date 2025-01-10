@@ -21,6 +21,6 @@ npm install
 npm start
 
 ### Docker Compose
-docker-compose -f docker-compose.monitoring.yml up --build 
+docker-compose -f docker-compose.yml up --build 
 
 

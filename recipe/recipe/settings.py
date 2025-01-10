@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'recipe_app',
     'rest_framework.authtoken',
+    "django_prometheus",
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+MIDDLEWARE = (
+    ["django_prometheus.middleware.PrometheusBeforeMiddleware"]
+    + MIDDLEWARE
+    + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
+)
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',

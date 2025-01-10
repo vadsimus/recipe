@@ -17,6 +17,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'config.yml')
+if not os.path.exists(CONFIG_FILE_PATH):
+    CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'config_TEMPLATE.yml')
 if os.path.exists(CONFIG_FILE_PATH):
     with open(CONFIG_FILE_PATH, 'r') as file:
         config = yaml.safe_load(file)

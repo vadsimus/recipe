@@ -15,6 +15,7 @@ RUN apt-get update \
         libpq-dev \
         pkg-config \
         default-libmysqlclient-dev \
+        netcat-openbsd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,6 +24,13 @@ COPY requirements.txt /app/requirements.txt
 RUN python -m venv /app/.venv \
     && /app/.venv/bin/pip install --upgrade pip setuptools wheel \
     && /app/.venv/bin/pip install -r requirements.txt
+
+# Create the logs directory
+RUN mkdir -p /logs \
+    && chmod 755 /logs
+
+# Set up a volume for the logs directory
+VOLUME /logs
 
 # Copy application files
 COPY . .

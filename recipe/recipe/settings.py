@@ -10,21 +10,31 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
+import yaml
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'config.yml')
+if not os.path.exists(CONFIG_FILE_PATH):
+    CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'config_TEMPLATE.yml')
+if os.path.exists(CONFIG_FILE_PATH):
+    with open(CONFIG_FILE_PATH, 'r') as file:
+        config = yaml.safe_load(file)
+else:
+    raise FileNotFoundError(f"Config file not found at {CONFIG_FILE_PATH}")
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-a$5-=6do_kw@$v=2g7vq#1e-86io*to!g_&07&%bc7@ni==d@*'
+SECRET_KEY = config['django']['secret_key']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config.get('django', {}).get('debug', False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config.get('django', {}).get('allowed_hosts', [])
 
 # Application definition
 
@@ -59,9 +69,7 @@ MIDDLEWARE = (
     + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
 )
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-]
+CORS_ALLOWED_ORIGINS = config.get('django', {}).get('cors_allowed_origins', [])
 
 ROOT_URLCONF = 'recipe.urls'
 
@@ -92,6 +100,8 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+DATABASES['default'] = config.get('database', DATABASES)
 
 if os.getenv('USE_MYSQL', 'false').lower() == 'true':
     DATABASES['default'] = {
@@ -149,4 +159,47 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+}
+
+LOGGING_LEVEL = config.get('django', {}).get('logging_level', 'INFO')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': LOGGING_LEVEL,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'recipe.log'),
+            'maxBytes': 5 * 1024 * 1024,  # 5 MB
+            'backupCount': 5,  # Keep the last 5 logs
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': LOGGING_LEVEL,
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': LOGGING_LEVEL,
+            'propagate': True,
+        },
+        'recipe_app': {
+            'handlers': ['file', 'console'],
+            'level': LOGGING_LEVEL,
+            'propagate': False,
+        },
+    },
 }

@@ -1,0 +1,19 @@
+django:
+  debug: true
+  logging_level: DEBUG
+  secret_key: django-insecure-a$5-=6do_kw@$v=2g7vq#1e-86io*to!g_&07&%bc7@ni==d@*
+  allowed_hosts:
+    - django
+    - localhost
+    - 127.0.0.1
+    - "*"
+  cors_allowed_origins:
+    - http://localhost:3000
+
+database:
+  ENGINE: django.db.backends.mysql
+  NAME: recipe_db
+  USER: recipe_user
+  PASSWORD: secret
+  HOST: mysql
+  PORT: 3306

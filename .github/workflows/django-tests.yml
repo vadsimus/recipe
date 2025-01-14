@@ -60,7 +60,7 @@ jobs:
         MYSQL_PASSWORD: password
         MYSQL_HOST: 127.0.0.1
         MYSQL_PORT: 3306
-      run: python manage.py migrate
+      run: mkdir -p logs && python manage.py migrate
 
     - name: Run unit tests
       working-directory: ./recipe

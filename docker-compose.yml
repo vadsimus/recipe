@@ -38,6 +38,8 @@ services:
       - DJANGO_SETTINGS_MODULE=recipe.settings
     depends_on:
         - mysql
+    volumes:
+      - ./recipe/config:/app/config
     command: >
       sh -c "
       until nc -z mysql 3306; do

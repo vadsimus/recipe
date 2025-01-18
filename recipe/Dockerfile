@@ -21,8 +21,7 @@ RUN apt-get update \
 
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN python -m venv /app/.venv \
-    && /app/.venv/bin/pip install --upgrade pip setuptools wheel \
+RUN pip install --upgrade pip setuptools wheel \
     && /app/.venv/bin/pip install -r requirements.txt
 
 # Create the logs directory

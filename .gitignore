@@ -22,5 +22,8 @@ recipe-fe/npm-debug.log*
 recipe-fe/yarn-debug.log*
 recipe-fe/yarn-error.log*
 
+recipe/config/config.yml
+recipe/logs/
+
 /venv/
 /.idea/

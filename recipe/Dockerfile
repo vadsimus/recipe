@@ -22,7 +22,7 @@ RUN apt-get update \
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip setuptools wheel \
-    && /app/.venv/bin/pip install -r requirements.txt
+    && pip install -r requirements.txt
 
 # Create the logs directory
 RUN mkdir -p /logs \
@@ -38,4 +38,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the Django server using Uvicorn
-CMD [".venv/bin/uvicorn", "recipe.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "recipe.asgi:application", "--host", "0.0.0.0", "--port", "8000"]

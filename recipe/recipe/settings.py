@@ -28,6 +28,9 @@ if os.path.exists(CONFIG_FILE_PATH):
 else:
     raise FileNotFoundError(f"Config file not found at {CONFIG_FILE_PATH}")
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -104,7 +107,7 @@ DATABASES = {
     }
 }
 
-DATABASES['default'] = config.get('database', DATABASES)
+# DATABASES['default'] = config.get('database', DATABASES)
 
 if os.getenv('USE_MYSQL', 'false').lower() == 'true':
     DATABASES['default'] = {
@@ -213,3 +216,5 @@ LOGGING = {
         },
     },
 }
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB

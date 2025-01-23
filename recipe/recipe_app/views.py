@@ -57,13 +57,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 {
                     'id': recipe.id,
                     'name': recipe.name,
-                    'image_url': recipe.image_url,
+                    'image': request.build_absolute_uri(recipe.image.url) if recipe.image else None,
                     'description': recipe.description,
                     'ingredients': ingredients_list,
                 }
             )
 
         return Response({'result': 'ok', 'data': data}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='upload-image')
+    def upload_image(self, request, pk=None):
+        # Кастомный эндпоинт для загрузки/обновления изображения
+        recipe = self.get_object()
+        image = request.FILES.get('image')
+
+        if not image:
+            return Response({'error': 'Изображение не загружено'}, status=status.HTTP_400_BAD_REQUEST)
+
+        recipe.image = image
+        recipe.save()
+
+        return Response({'message': 'Изображение успешно загружено'}, status=status.HTTP_200_OK)
 
 
 # Viewset for Ingredient

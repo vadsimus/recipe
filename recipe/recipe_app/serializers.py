@@ -22,7 +22,15 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ['id', 'name', 'image_url', 'description', 'ingredients']
+        fields = ['id', 'name', 'image', 'description', 'ingredients']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.image:
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(instance.image.url)
+        return representation
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

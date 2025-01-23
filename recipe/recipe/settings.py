@@ -107,7 +107,7 @@ DATABASES = {
     }
 }
 
-# DATABASES['default'] = config.get('database', DATABASES)
+DATABASES['default'] = config.get('database', DATABASES)
 
 if os.getenv('USE_MYSQL', 'false').lower() == 'true':
     DATABASES['default'] = {

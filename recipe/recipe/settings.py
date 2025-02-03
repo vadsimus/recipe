@@ -9,7 +9,10 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+
 import os
+from datetime import timedelta
+
 import yaml
 from pathlib import Path
 
@@ -24,6 +27,9 @@ if os.path.exists(CONFIG_FILE_PATH):
         config = yaml.safe_load(file)
 else:
     raise FileNotFoundError(f"Config file not found at {CONFIG_FILE_PATH}")
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -157,8 +163,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=80),  # todo change to 5 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 LOGGING_LEVEL = config.get('django', {}).get('logging_level', 'INFO')
@@ -203,3 +216,5 @@ LOGGING = {
         },
     },
 }
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB

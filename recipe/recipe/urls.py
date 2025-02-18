@@ -36,7 +36,6 @@ router.register(r'ingredients', views.IngredientViewSet, basename='ingredient')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),  # Includes the viewset routes
-    path('recipes/create/', views.CreateRecipeView.as_view(), name='create_recipe'),  # Custom recipe creation view
     path('get_ingredients/', views.get_ingredients, name='get_ingredients'),  # Simple ingredient list view
     path('create_ingredient/', views.create_ingredient, name='create_ingredient'),  # Simple ingredient creation view
     path('api/register/', views.register_user, name='register_user'),

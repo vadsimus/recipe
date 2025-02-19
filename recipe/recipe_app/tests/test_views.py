@@ -7,7 +7,6 @@ from recipe_app.models import Ingredient, Recipe, IngredientRecipe
 
 
 def generate_image():
-    """Создание тестового изображения."""
     file = BytesIO()
     image = Image.new('RGB', (100, 100), 'white')
     image.save(file, 'jpeg')
@@ -90,19 +89,19 @@ class RecipeAPITestCase(APITestCase):
             "name": "Test Recipe",
             "description": "Test description",
             "ingredients": [
-                {"ingredient": 999, "quantity": 1},  # Несуществующий ID ингредиента
+                {"ingredient": 999, "quantity": 1},
             ],
         }
         response = self.client.post(url, data, format='json')
 
-        # Проверка, что статус ответа - 400 Bad Request
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # Проверка, что ключ 'ingredient' есть в ответе
-        self.assertIn('ingredient', response.data)
+        self.assertIn('ingredients', response.data)
+        self.assertIsInstance(response.data['ingredients'], list)
+        self.assertIn('ingredient', response.data['ingredients'][0])
 
-        expected_error = "Ingredient with id 999 does not exist or does not belong to the user."
-        actual_error = str(response.data['ingredient'])  # Преобразование ошибки в строку
+        expected_error = 'Invalid pk "999" - object does not exist.'
+        actual_error = str(response.data['ingredients'][0]['ingredient'][0])
         self.assertEqual(actual_error, expected_error)
 
     def test_recipes_filtered_by_user(self):

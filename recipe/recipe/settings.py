@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'recipe_app',
-    'rest_framework.authtoken',
     "django_prometheus",
 ]
 

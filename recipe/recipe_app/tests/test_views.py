@@ -25,13 +25,13 @@ class RecipeAPITestCase(APITestCase):
         self.ingredient2 = Ingredient.objects.create(name="Sugar", cost=1.0, user=self.user)
 
     def test_create_recipe_with_ingredients(self):
-        url = '/recipes/'
+        url = '/api/recipes/'
         data = {
             "name": "Test Recipe",
             "description": "Test description",
             "ingredients": [
-                {"ingredient": self.ingredient1.id, "quantity": 1},
-                {"ingredient": self.ingredient2.id, "quantity": 2},
+                {"ingredient_id": self.ingredient1.id, "ingredient_amount": 1},
+                {"ingredient_id": self.ingredient2.id, "ingredient_amount": 2},
             ],
         }
         response = self.client.post(url, data, format='json')
@@ -53,29 +53,29 @@ class RecipeAPITestCase(APITestCase):
         recipe = Recipe.objects.create(name="Test Recipe", description="Test description", user=self.user)
         IngredientRecipe.objects.create(recipe=recipe, ingredient=self.ingredient1, ingredient_amount=1)
 
-        url = '/recipes/'
+        url = '/api/recipes/'
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], recipe.name)
+        self.assertEqual(len(response.data.get('data')), 1)
+        self.assertEqual(response.data.get('data')[0]['name'], recipe.name)
 
     def test_list_recipes_with_ingredients(self):
         recipe = Recipe.objects.create(name="Test Recipe", description="Test description", user=self.user)
         IngredientRecipe.objects.create(recipe=recipe, ingredient=self.ingredient1, ingredient_amount=1)
 
-        url = '/recipes/list_recipes_with_ingredients/'
+        url = '/api/recipes/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['name'], recipe.name)
-        self.assertEqual(response.data['data'][0]['ingredients'][0]['name'], self.ingredient1.name)
+        self.assertEqual(response.data['data'][0]['ingredients'][0]['ingredient']['name'], self.ingredient1.name)
 
     def test_upload_image(self):
         recipe = Recipe.objects.create(name="Test Recipe", description="Test description", user=self.user)
 
-        url = f'/recipes/{recipe.id}/upload-image/'
+        url = f'/api/recipes/{recipe.id}/upload-image/'
         image = generate_image()
         response = self.client.post(url, {'image': image}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -84,12 +84,12 @@ class RecipeAPITestCase(APITestCase):
         self.assertTrue(bool(recipe.image))
 
     def test_create_recipe_with_invalid_ingredient(self):
-        url = '/recipes/'
+        url = '/api/recipes/'
         data = {
             "name": "Test Recipe",
             "description": "Test description",
             "ingredients": [
-                {"ingredient": 999, "quantity": 1},
+                {"ingredient_id": 999, "ingredient_amount": 1},
             ],
         }
         response = self.client.post(url, data, format='json')
@@ -107,9 +107,9 @@ class RecipeAPITestCase(APITestCase):
     def test_recipes_filtered_by_user(self):
         user_recipe = Recipe.objects.create(name="User Recipe", description="User description", user=self.user)
 
-        url = '/recipes/'
+        url = '/api/recipes/'
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], user_recipe.name)
+        self.assertEqual(len(response.data.get('data')), 1)
+        self.assertEqual(response.data.get('data')[0]['name'], user_recipe.name)

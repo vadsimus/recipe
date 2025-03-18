@@ -96,13 +96,11 @@ class RecipeAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertIn('ingredients', response.data)
-        self.assertIsInstance(response.data['ingredients'], list)
-        self.assertIn('ingredient', response.data['ingredients'][0])
+        self.assertEqual(response.data.get("result"), "error")
+        self.assertIsNone(response.data.get("data"))
 
         expected_error = 'Invalid pk "999" - object does not exist.'
-        actual_error = str(response.data['ingredients'][0]['ingredient'][0])
-        self.assertEqual(actual_error, expected_error)
+        self.assertEqual(response.data.get("message"), expected_error)
 
     def test_recipes_filtered_by_user(self):
         user_recipe = Recipe.objects.create(name="User Recipe", description="User description", user=self.user)

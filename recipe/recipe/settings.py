@@ -219,3 +219,26 @@ LOGGING = {
 }
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+# settings.py
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'The best TEAM',
+    'DESCRIPTION': 'The best API for the best team',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'CONTACT': {
+        'name': 'Nobody',
+        'url': 'https://example.com',
+        'email': 'support@example.com',
+    },
+    'LICENSE': {
+        'name': 'MIT License',
+        'url': 'https://opensource.org/licenses/MIT',
+    },
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'defaultModelRendering': 'model',
+        'docExpansion': 'none',
+    },
+}

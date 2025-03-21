@@ -4,7 +4,7 @@ uvicorn==0.34.0
 django-cors-headers==4.3.1
 djangorestframework==3.15.2
 sqlparse==0.5.0
-typing_extensions==4.11.0
+typing_extensions==4.12.2
 pre-commit==4.0.1
 mysqlclient==2.2.6
 django-prometheus==2.3.1

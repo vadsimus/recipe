@@ -14,3 +14,4 @@ pillow==11.1.0
 pytest==8.3.4
 requests==2.32.3
 pytest-django==4.10.0
+drf_spectacular==0.28.0

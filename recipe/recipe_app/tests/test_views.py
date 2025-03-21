@@ -70,7 +70,7 @@ class RecipeAPITestCase(APITestCase):
 
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['name'], recipe.name)
-        self.assertEqual(response.data['data'][0]['ingredients'][0]['ingredient']['name'], self.ingredient1.name)
+        self.assertEqual(response.data['data'][0]['ingredients'][0]['name'], self.ingredient1.name)
 
     def test_upload_image(self):
         recipe = Recipe.objects.create(name="Test Recipe", description="Test description", user=self.user)

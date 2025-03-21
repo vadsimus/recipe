@@ -35,7 +35,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredient_recipes', [])
-        # Извлекаем user из validated_data, если он там присутствует
         user = validated_data.pop('user', self.context['request'].user)
         recipe = Recipe.objects.create(user=user, **validated_data)
         for ingredient_data in ingredients_data:

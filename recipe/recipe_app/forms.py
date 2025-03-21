@@ -17,7 +17,7 @@ class RecipeForm(forms.ModelForm):
 
     class Meta:
         model = Recipe
-        fields = ['name', 'ingredients']  # Поля для имени рецепта и выбора ингредиентов
+        fields = ['name', 'ingredients']
 
     def clean(self):
         cleaned_data = super().clean()

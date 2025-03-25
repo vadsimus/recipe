@@ -16,35 +16,37 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
-
-from recipe_app import views
-from django.conf import settings
 from django.conf.urls.static import static
+from django.conf import settings
+from django.urls import path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-# Setting up the DRF router for viewsets
-router = DefaultRouter()
-router.register(r'recipes', views.RecipeViewSet, basename='recipe')
-router.register(r'ingredients', views.IngredientViewSet, basename='ingredient')
+from recipe_app.views import (
+    IngredientListCreateView,
+    RecipeListCreateView,
+    RecipeDetailView,
+    RecipeImageUploadView,
+    UserRegistrationView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),  # Includes the viewset routes
-    path('get_ingredients/', views.get_ingredients, name='get_ingredients'),  # Simple ingredient list view
-    path('create_ingredient/', views.create_ingredient, name='create_ingredient'),  # Simple ingredient creation view
-    path('api/register/', views.register_user, name='register_user'),
-    # JWT endpoints
+    # Ingredient endpoints
+    path('api/ingredients/', IngredientListCreateView.as_view(), name='ingredient-list-create'),
+    # Recipe endpoints
+    path('api/recipes/', RecipeListCreateView.as_view(), name='recipe-list-create'),
+    path('api/recipes/<int:pk>/', RecipeDetailView.as_view(), name='recipe-detail'),
+    path('api/recipes/<int:pk>/upload-image/', RecipeImageUploadView.as_view(), name='recipe-upload-image'),
+    # User registration
+    path('api/register/', UserRegistrationView.as_view(), name='user-registration'),
+    # JWT Token endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    # Prometheus metrics
-    path("prometheus/", include("django_prometheus.urls")),
+    # DRF-Spectacular endpoints for schema and interactive docs
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
 
 if settings.DEBUG:

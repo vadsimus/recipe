@@ -18,7 +18,7 @@ class Ingredient(models.Model):
 def validate_image(image):
     max_size_mb = 5  # 5 MB
     if image.size > max_size_mb * 1024 * 1024:
-        raise ValidationError(f"Максимальный размер изображения: {max_size_mb} MB")
+        raise ValidationError(f"Image size exceeds the allowed limit: {max_size_mb} MB")
 
 
 class Recipe(models.Model):

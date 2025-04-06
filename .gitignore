@@ -27,3 +27,9 @@ recipe/logs/
 
 /venv/
 /.idea/
+
+__pycache__/
+logs/
+recipe/__pycache__/
+recipe_app/__pycache__/
+recipe_app/migrations/__pycache__/

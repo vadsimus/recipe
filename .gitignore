@@ -33,3 +33,5 @@ logs/
 recipe/__pycache__/
 recipe_app/__pycache__/
 recipe_app/migrations/__pycache__/
+recipe-fe/dist/
+recipe-fe/src/.umi/

@@ -73,7 +73,7 @@ jobs:
         MYSQL_HOST: 127.0.0.1
         MYSQL_PORT: 3306
       run: |
-        pytest recipe_app/tests/test_api.py recipe_app/tests/test_views.py --maxfail=1 --disable-warnings --alluredir=allure-results
+        pytest recipe_app/tests/test_api.py recipe_app/tests/test_views.py --maxfail=2 --disable-warnings --alluredir=allure-results
 
     - name: Install Allure Commandline
       run: |

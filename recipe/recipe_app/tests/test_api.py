@@ -4,12 +4,14 @@ import pytest
 import requests
 from PIL import Image
 
-BASE_URL = "http://localhost:8000"  # Change if needed
+
+@pytest.fixture
+def base_url(live_server):
+    return live_server.url
 
 
 @pytest.fixture
 def user_credentials():
-    # Generate unique username and email to avoid conflicts
     unique_str = str(uuid.uuid4())
     username = f"testuser_{unique_str}"
     email = f"{username}@example.com"
@@ -18,174 +20,158 @@ def user_credentials():
 
 
 @pytest.fixture
-def register_user(user_credentials):
-    url = f"{BASE_URL}/api/register/"
+def register_user(base_url, user_credentials):
+    url = f"{base_url}/api/register/"
     response = requests.post(url, json=user_credentials)
     assert response.status_code == 201, f"Registration error: {response.text}"
     return user_credentials
 
 
 @pytest.fixture
-def auth_headers(register_user, user_credentials):
-    # Obtain JWT token via /api/token/ endpoint
-    token_url = f"{BASE_URL}/api/token/"
-    data = {
-        "username": user_credentials["username"],
-        "password": user_credentials["password"],
-    }
-    response = requests.post(token_url, json=data)
-    assert response.status_code == 200, f"Token obtain error: {response.text}"
-    token = response.json().get("access")
-    headers = {"Authorization": f"Bearer {token}"}
-    return headers
-
-
-def test_register_user(user_credentials):
-    url = f"{BASE_URL}/api/register/"
-    response = requests.post(url, json=user_credentials)
-    assert response.status_code == 201, f"Registration error: {response.text}"
-    data = response.json()
-    assert data.get("result") == "ok", "Registration response does not contain result = ok"
-
-
-def test_token_obtain(user_credentials):
-    # Register the user if not already registered
-    reg_url = f"{BASE_URL}/api/register/"
-    reg_response = requests.post(reg_url, json=user_credentials)
-    assert reg_response.status_code == 201, f"Registration error: {reg_response.text}"
-
-    token_url = f"{BASE_URL}/api/token/"
+def auth_headers(base_url, register_user, user_credentials):
+    token_url = f"{base_url}/api/token/"
     data = {"username": user_credentials["username"], "password": user_credentials["password"]}
     response = requests.post(token_url, json=data)
     assert response.status_code == 200, f"Token obtain error: {response.text}"
-    json_resp = response.json()
-    assert "access" in json_resp, "Access token not received"
-    assert "refresh" in json_resp, "Refresh token not received"
+    token = response.json()["access"]
+    return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_ingredient(auth_headers):
-    url = f"{BASE_URL}/api/ingredients/"
+def test_register_user(base_url, user_credentials):
+    url = f"{base_url}/api/register/"
+    response = requests.post(url, json=user_credentials)
+    assert response.status_code == 201, f"Registration error: {response.text}"
+    data = response.json()
+    assert data["result"] == "ok"
+
+
+def test_token_obtain(base_url, user_credentials):
+    reg_url = f"{base_url}/api/register/"
+    requests.post(reg_url, json=user_credentials)
+    token_url = f"{base_url}/api/token/"
+    resp = requests.post(
+        token_url, json={"username": user_credentials["username"], "password": user_credentials["password"]}
+    )
+    assert resp.status_code == 200, f"Token obtain error: {resp.text}"
+    j = resp.json()
+    assert "access" in j and "refresh" in j
+
+
+def test_create_ingredient(base_url, auth_headers):
+    url = f"{base_url}/api/ingredients/"
     payload = {"name": "Sugar", "cost": 2.5}
-    response = requests.post(url, json=payload, headers=auth_headers)
-    assert response.status_code == 201, f"Ingredient creation error: {response.text}"
-    # Verify ingredient list retrieval
-    get_url = f"{BASE_URL}/api/ingredients/"
-    get_response = requests.get(get_url, headers=auth_headers)
-    assert get_response.status_code == 200, f"Ingredient retrieval error: {get_response.text}"
-    data = get_response.json().get("data", [])
-    assert any(ing["name"] == "Sugar" for ing in data), "Ingredient 'Sugar' not found in list"
+    resp = requests.post(url, json=payload, headers=auth_headers)
+    assert resp.status_code == 201, f"Ingredient creation error: {resp.text}"
+
+    get_url = url
+    get_resp = requests.get(get_url, headers=auth_headers)
+    assert get_resp.status_code == 200, f"Ingredient retrieval error: {get_resp.text}"
+    data = get_resp.json()["data"]
+    assert any(ing["name"] == "Sugar" and float(ing["cost"]) == 2.5 for ing in data)
 
 
-def test_create_recipe(auth_headers):
-    # First, create an ingredient to be used in the recipe
-    ingredient_url = f"{BASE_URL}/api/ingredients/"
-    ingredient_payload = {"name": "Flour", "cost": 1.0}
-    ing_response = requests.post(ingredient_url, json=ingredient_payload, headers=auth_headers)
-    assert ing_response.status_code == 201, f"Ingredient creation error: {ing_response.text}"
+def test_create_recipe(base_url, auth_headers):
+    ing_url = f"{base_url}/api/ingredients/"
+    ing_payload = {"name": "Flour", "cost": 1.0}
+    requests.post(ing_url, json=ing_payload, headers=auth_headers)
 
-    # Retrieve ingredient list to get the created ingredient's id
-    get_ing_url = f"{BASE_URL}/api/ingredients/"
-    get_ing_response = requests.get(get_ing_url, headers=auth_headers)
-    ingredients = get_ing_response.json().get("data", [])
-    flour = next((ing for ing in ingredients if ing["name"] == "Flour"), None)
-    assert flour is not None, "Ingredient 'Flour' not found"
+    ingredients = requests.get(ing_url, headers=auth_headers).json()["data"]
+    flour = next(ing for ing in ingredients if ing["name"] == "Flour")
+    assert flour
 
-    # Create a recipe using the created ingredient
-    recipe_url = f"{BASE_URL}/api/recipes/"
+    recipe_url = f"{base_url}/api/recipes/"
     recipe_payload = {
         "name": "Bread",
         "description": "Fresh homemade bread",
         "ingredients": [{"ingredient_id": flour["id"], "ingredient_amount": 500}],
     }
-    recipe_response = requests.post(recipe_url, json=recipe_payload, headers=auth_headers)
-    assert recipe_response.status_code == 201, f"Recipe creation error: {recipe_response.text}"
-    recipe_data = recipe_response.json()
-    assert "id" in recipe_data['data'], "Recipe ID not returned"
+    r = requests.post(recipe_url, json=recipe_payload, headers=auth_headers)
+    assert r.status_code == 201, f"Recipe creation error: {r.text}"
+
+    data = r.json()["data"]
+    assert data["id"]
+    assert data["name"] == "Bread"
+    assert data["description"] == "Fresh homemade bread"
+    assert len(data["ingredients"]) == 1
+    item = data["ingredients"][0]
+    assert item["id"] == flour["id"]
+    assert item["name"] == "Flour"
+    assert float(item["cost"]) == 1.0
+    assert item["ingredient_amount"] == 500
+    assert float(item["ingredient_price"]) == pytest.approx(500.0)
+    assert float(data["total_price"]) == pytest.approx(500.0)
 
 
-def test_list_recipes_with_ingredients(auth_headers):
-    # Endpoint for retrieving recipes with detailed ingredient info
-    url = f"{BASE_URL}/api/recipes/"
-    response = requests.get(url, headers=auth_headers)
-    assert response.status_code == 200, f"Error retrieving recipes: {response.text}"
-    data = response.json().get("data", [])
-    if data:
-        for recipe in data:
-            assert "id" in recipe
-            assert "name" in recipe
-            assert "description" in recipe
-            assert "ingredients" in recipe
-            for ingredient in recipe["ingredients"]:
-                assert "name" in ingredient
-                assert "amount" in ingredient
-                assert "cost" in ingredient
+def test_list_recipes_with_ingredients(base_url, auth_headers):
+    url = f"{base_url}/api/recipes/"
+    resp = requests.get(url, headers=auth_headers)
+    assert resp.status_code == 200, f"Error retrieving recipes: {resp.text}"
+    data = resp.json()["data"]
+
+    for recipe in data:
+        assert "id" in recipe
+        assert "name" in recipe
+        assert "description" in recipe
+        assert "ingredients" in recipe
+        assert "total_price" in recipe
+        for ing in recipe["ingredients"]:
+            assert "id" in ing
+            assert "name" in ing
+            assert "cost" in ing
+            assert "ingredient_amount" in ing
+            assert "ingredient_price" in ing
 
 
-def test_upload_recipe_image(auth_headers):
-    # Create a recipe without an image
-    recipe_url = f"{BASE_URL}/api/recipes/"
-    recipe_payload = {"name": "Pancakes", "image": None, "description": "Delicious pancakes", "ingredients": []}
-    recipe_response = requests.post(recipe_url, json=recipe_payload, headers=auth_headers)
-    assert recipe_response.status_code == 201, f"Recipe creation error: {recipe_response.text}"
-    recipe_id = recipe_response.json().get('data', {}).get("id")
-    assert recipe_id, "Recipe ID not returned"
+def test_upload_recipe_image(base_url, auth_headers):
+    recipe_url = f"{base_url}/api/recipes/"
+    payload = {"name": "Pancakes", "description": "Yummy", "ingredients": []}
+    cre = requests.post(recipe_url, json=payload, headers=auth_headers)
+    recipe_id = cre.json()["data"]["id"]
 
-    # Upload an image for the created recipe
-    upload_url = f"{BASE_URL}/api/recipes/{recipe_id}/upload-image/"
+    upload_url = f"{base_url}/api/recipes/{recipe_id}/upload-image/"
 
-    # Create an in-memory image (PNG)
-    img_bytes = io.BytesIO()
-    image = Image.new('RGB', (100, 100), color='red')
-    image.save(img_bytes, format='PNG')
-    img_bytes.seek(0)
+    img_buf = io.BytesIO()
+    Image.new("RGB", (100, 100), "red").save(img_buf, format="PNG")
+    img_buf.seek(0)
+    files = {"image": ("test.png", img_buf, "image/png")}
 
-    files = {'image': ('test.png', img_bytes, 'image/png')}
-    upload_response = requests.post(upload_url, files=files, headers=auth_headers)
-    assert upload_response.status_code == 200, f"Image upload error: {upload_response.text}"
-    resp_json = upload_response.json()
-    assert resp_json.get("message") == "Image successfully uploaded", "Incorrect upload message"
+    upl = requests.post(upload_url, files=files, headers=auth_headers)
+    assert upl.status_code == 200, f"Image upload error: {upl.text}"
+
+    j = upl.json()
+    assert j["message"] == "Image successfully uploaded"
+    d = j["data"]
+    assert "ingredients" in d and isinstance(d["ingredients"], list)
+    assert float(d["total_price"]) == pytest.approx(0.0)
+    assert "image" in d and d["image"]
 
 
-def test_edit_recipe(auth_headers):
-    # First, create a recipe
-    recipe_url = f"{BASE_URL}/api/recipes/"
-    recipe_payload = {"name": "Classic Pancakes", "description": "Simple and delicious pancakes", "ingredients": []}
-    recipe_response = requests.post(recipe_url, json=recipe_payload, headers=auth_headers)
-    assert recipe_response.status_code == 201, f"Recipe creation error: {recipe_response.text}"
+def test_edit_recipe(base_url, auth_headers):
+    recipe_url = f"{base_url}/api/recipes/"
+    base_payload = {"name": "Classic Pancakes", "description": "Tasty", "ingredients": []}
+    cre = requests.post(recipe_url, json=base_payload, headers=auth_headers)
+    rid = cre.json()["data"]["id"]
 
-    recipe_data = recipe_response.json()
-    recipe_id = recipe_data.get('data', {}).get("id")
-    assert recipe_id, "Recipe ID not returned"
+    ing_url = f"{base_url}/api/ingredients/"
+    ing_payload = {"name": "Milk", "cost": 1.5}
+    requests.post(ing_url, json=ing_payload, headers=auth_headers)
+    milk = next(ing for ing in requests.get(ing_url, headers=auth_headers).json()["data"] if ing["name"] == "Milk")
 
-    # Create an ingredient for editing the recipe
-    ingredient_url = f"{BASE_URL}/api/ingredients/"
-    ingredient_payload = {"name": "Milk", "cost": 1.5}
-    ing_response = requests.post(ingredient_url, json=ingredient_payload, headers=auth_headers)
-    assert ing_response.status_code == 201, f"Ingredient creation error: {ing_response.text}"
-
-    # Get the created ingredient's ID
-    get_ing_url = f"{BASE_URL}/api/ingredients/"
-    get_ing_response = requests.get(get_ing_url, headers=auth_headers)
-    ingredients = get_ing_response.json().get("data", [])
-    milk = next((ing for ing in ingredients if ing["name"] == "Milk"), None)
-    assert milk is not None, "Ingredient 'Milk' not found"
-
-    # Prepare data for updating the recipe
-    edit_url = f"{BASE_URL}/api/recipes/{recipe_id}/"
-    updated_payload = {
+    edit_url = f"{base_url}/api/recipes/{rid}/"
+    upd = {
         "name": "Updated Pancakes",
-        "description": "Fluffy and tasty pancakes with milk",
+        "description": "Fluffy with milk",
         "ingredients": [{"ingredient_id": milk["id"], "ingredient_amount": 200}],
     }
+    patch = requests.patch(edit_url, json=upd, headers=auth_headers)
+    assert patch.status_code == 200, f"Recipe update error: {patch.text}"
 
-    # Send PATCH request to update the recipe
-    edit_response = requests.patch(edit_url, json=updated_payload, headers=auth_headers)
-    assert edit_response.status_code == 200, f"Recipe update error: {edit_response.text}"
-    updated_data = edit_response.json()
-    assert updated_data.get('data')["name"] == "Updated Pancakes", "Recipe name was not updated"
-    assert (
-        updated_data.get('data')["description"] == "Fluffy and tasty pancakes with milk"
-    ), "Recipe description was not updated"
-    assert len(updated_data.get('data')["ingredients"]) == 1, "Ingredients were not added"
-    assert updated_data.get('data')["ingredients"][0]["ingredient"]["name"] == "Milk", "Incorrect ingredient added"
-    assert updated_data.get('data')["ingredients"][0]["ingredient_amount"] == 200, "Incorrect ingredient quantity"
+    d = patch.json()["data"]
+    assert d["name"] == "Updated Pancakes"
+    assert d["description"] == "Fluffy with milk"
+    assert len(d["ingredients"]) == 1
+    item = d["ingredients"][0]
+    assert item["name"] == "Milk"
+    assert item["ingredient_amount"] == 200
+    assert float(item["ingredient_price"]) == pytest.approx(200 * float(milk["cost"]))
+    assert pytest.approx(float(item["ingredient_price"])) == float(d["total_price"])

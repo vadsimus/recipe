@@ -17,7 +17,6 @@ from recipe_app.schemas.responses import (
     IngredientResponse,
     IngredientListResponse,
     IngredientCreateResponse,
-    RecipeResponse,
     RecipeListResponse,
     RecipeCreateResponse,
     RecipeDetailResponse,
@@ -28,6 +27,7 @@ from recipe_app.schemas.responses import (
 )
 from .pydantic_base_view import PydanticAPIView, FileUploadPydanticAPIView
 from .utils.pydantic_parameters import PydanticModelParameters
+from .utils.response_builders import build_recipe_response
 
 
 class IngredientListCreateView(PydanticAPIView):
@@ -41,13 +41,13 @@ class IngredientListCreateView(PydanticAPIView):
         description="Fetch ingredients for the authenticated user with an optional filter by name.",
     )
     def get(self, request, *args, **kwargs):
-        name = request.query_params.get('name')
+        name = request.query_params.get("name")
         queryset = Ingredient.objects.filter(user=request.user)
         if name:
             queryset = queryset.filter(name__icontains=name)
         output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost) for i in queryset]
         response_data = IngredientListResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'))
+        return Response(response_data.model_dump(mode="json"))
 
     @extend_schema(
         request=IngredientInput,
@@ -57,11 +57,11 @@ class IngredientListCreateView(PydanticAPIView):
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        data = request.pydantic.model_dump(mode='json')
+        data = request.pydantic.model_dump(mode="json")
         ingredient = Ingredient.objects.create(user=request.user, **data)
         output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost)
         response_data = IngredientCreateResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'), status=status.HTTP_201_CREATED)
+        return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
 
 class RecipeListCreateView(PydanticAPIView):
@@ -75,30 +75,13 @@ class RecipeListCreateView(PydanticAPIView):
         description="Fetch recipes for the authenticated user with an optional filter by name.",
     )
     def get(self, request, *args, **kwargs):
-        name = request.query_params.get('name')
-        queryset = Recipe.objects.filter(user=request.user)
+        name = request.query_params.get("name")
+        queryset = Recipe.objects.filter(user=request.user).prefetch_related("ingredient_recipes__ingredient")
         if name:
             queryset = queryset.filter(name__icontains=name)
-        output = []
-        for recipe in queryset:
-            ingredients_output = [
-                IngredientResponse(
-                    id=ir.ingredient.id,
-                    name=ir.ingredient.name,
-                    cost=ir.ingredient.cost,
-                )
-                for ir in recipe.ingredient_recipes.all()
-            ]
-            recipe_data = RecipeResponse(
-                id=recipe.id,
-                name=recipe.name,
-                description=recipe.description,
-                image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
-                ingredients=ingredients_output,
-            )
-            output.append(recipe_data)
+        output = [build_recipe_response(recipe, request) for recipe in queryset]
         response_data = RecipeListResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'))
+        return Response(response_data.model_dump(mode="json"))
 
     @extend_schema(
         request=RecipeInput,
@@ -108,35 +91,28 @@ class RecipeListCreateView(PydanticAPIView):
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        data = request.pydantic.model_dump(mode='json')
-        recipe = Recipe.objects.create(name=data['name'], description=data['description'], user=request.user)
-        for ingr_data in data.get('ingredients', []):
-            ingredient = Ingredient.objects.filter(id=ingr_data['ingredient_id'], user=request.user).first()
+        data = request.pydantic.model_dump(mode="json")
+        recipe = Recipe.objects.create(
+            name=data["name"],
+            description=data["description"],
+            user=request.user,
+        )
+        for ingr_data in data.get("ingredients", []):
+            ingredient = Ingredient.objects.filter(id=ingr_data["ingredient_id"], user=request.user).first()
             if not ingredient:
                 error_response = APIResponse(
-                    result="error", message=f'Invalid pk "{ingr_data["ingredient_id"]}" - object does not exist.'
+                    result="error",
+                    message=f'Invalid pk "{ingr_data["ingredient_id"]}" - object does not exist.',
                 )
-                return Response(error_response.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
+                return Response(error_response.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
             IngredientRecipe.objects.create(
-                recipe=recipe, ingredient=ingredient, ingredient_amount=ingr_data['ingredient_amount']
+                recipe=recipe,
+                ingredient=ingredient,
+                ingredient_amount=ingr_data["ingredient_amount"],
             )
-        ingredients_output = [
-            IngredientResponse(
-                id=ir.ingredient.id,
-                name=ir.ingredient.name,
-                cost=ir.ingredient.cost,
-            )
-            for ir in recipe.ingredient_recipes.all()
-        ]
-        output = RecipeResponse(
-            id=recipe.id,
-            name=recipe.name,
-            description=recipe.description,
-            image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
-            ingredients=ingredients_output,
-        )
+        output = build_recipe_response(recipe, request)
         response_data = RecipeCreateResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'), status=status.HTTP_201_CREATED)
+        return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
 
 class RecipeDetailView(PydanticAPIView):
@@ -153,23 +129,9 @@ class RecipeDetailView(PydanticAPIView):
     )
     def get(self, request, pk, *args, **kwargs):
         recipe = self.get_object(pk)
-        ingredients_output = [
-            IngredientResponse(
-                id=ir.ingredient.id,
-                name=ir.ingredient.name,
-                cost=ir.ingredient.cost,
-            )
-            for ir in recipe.ingredient_recipes.all()
-        ]
-        output = RecipeResponse(
-            id=recipe.id,
-            name=recipe.name,
-            description=recipe.description,
-            image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
-            ingredients=ingredients_output,
-        )
+        output = build_recipe_response(recipe, request)
         response_data = RecipeDetailResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'))
+        return Response(response_data.model_dump(mode="json"))
 
     @extend_schema(
         request=RecipeInput,
@@ -180,33 +142,21 @@ class RecipeDetailView(PydanticAPIView):
     @transaction.atomic
     def put(self, request, pk, *args, **kwargs):
         recipe = self.get_object(pk)
-        data = request.pydantic.model_dump(mode='json')
-        recipe.name = data['name']
-        recipe.description = data['description']
+        data = request.pydantic.model_dump(mode="json")
+        recipe.name = data["name"]
+        recipe.description = data["description"]
         recipe.save()
         recipe.ingredient_recipes.all().delete()
-        for ingr_data in data.get('ingredients', []):
-            ingredient = get_object_or_404(Ingredient, id=ingr_data['ingredient_id'], user=request.user)
+        for ingr_data in data.get("ingredients", []):
+            ingredient = get_object_or_404(Ingredient, id=ingr_data["ingredient_id"], user=request.user)
             IngredientRecipe.objects.create(
-                recipe=recipe, ingredient=ingredient, ingredient_amount=ingr_data['ingredient_amount']
+                recipe=recipe,
+                ingredient=ingredient,
+                ingredient_amount=ingr_data["ingredient_amount"],
             )
-        ingredients_output = [
-            IngredientResponse(
-                id=ir.ingredient.id,
-                name=ir.ingredient.name,
-                cost=ir.ingredient.cost,
-            )
-            for ir in recipe.ingredient_recipes.all()
-        ]
-        output = RecipeResponse(
-            id=recipe.id,
-            name=recipe.name,
-            description=recipe.description,
-            image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
-            ingredients=ingredients_output,
-        )
+        output = build_recipe_response(recipe, request)
         response_data = RecipeUpdateResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'))
+        return Response(response_data.model_dump(mode="json"))
 
     @extend_schema(
         request=RecipeInput,
@@ -217,7 +167,7 @@ class RecipeDetailView(PydanticAPIView):
     @transaction.atomic
     def patch(self, request, pk, *args, **kwargs):
         recipe = self.get_object(pk)
-        partial_data = request.pydantic.model_dump(mode='json')
+        partial_data = request.pydantic.model_dump(mode="json")
         if "name" in partial_data:
             recipe.name = partial_data["name"]
         if "description" in partial_data:
@@ -228,30 +178,18 @@ class RecipeDetailView(PydanticAPIView):
             for ingr_data in partial_data.get("ingredients", []):
                 ingredient = get_object_or_404(Ingredient, id=ingr_data["ingredient_id"], user=request.user)
                 IngredientRecipe.objects.create(
-                    recipe=recipe, ingredient=ingredient, ingredient_amount=ingr_data["ingredient_amount"]
+                    recipe=recipe,
+                    ingredient=ingredient,
+                    ingredient_amount=ingr_data["ingredient_amount"],
                 )
-        ingredients_output = [
-            IngredientResponse(
-                id=ir.ingredient.id,
-                name=ir.ingredient.name,
-                cost=ir.ingredient.cost,
-            )
-            for ir in recipe.ingredient_recipes.all()
-        ]
-        output = RecipeResponse(
-            id=recipe.id,
-            name=recipe.name,
-            description=recipe.description,
-            image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
-            ingredients=ingredients_output,
-        )
+        output = build_recipe_response(recipe, request)
         response_data = RecipePartialUpdateResponse(result="ok", data=output)
-        return Response(response_data.model_dump(mode='json'))
+        return Response(response_data.model_dump(mode="json"))
 
 
 class RecipeImageUploadView(FileUploadPydanticAPIView):
     permission_classes = [IsAuthenticated]
-    file_fields = ['image']
+    file_fields = ["image"]
 
     class FileUploadModel(BaseModel):
         image: Any = None
@@ -270,37 +208,23 @@ class RecipeImageUploadView(FileUploadPydanticAPIView):
     )
     def post(self, request, pk, *args, **kwargs):
         recipe = get_object_or_404(Recipe, pk=pk, user=request.user)
-        image = request.FILES.get('image')
+        image = request.FILES.get("image")
         if not image:
             error_resp = APIResponse(result="error", message="Image not uploaded.")
-            return Response(error_resp.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
-        allowed_types = ['image/jpeg', 'image/png', 'image/gif']
+            return Response(error_resp.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
+        allowed_types = ["image/jpeg", "image/png", "image/gif"]
         if image.content_type not in allowed_types:
             error_resp = APIResponse(result="error", message="Unsupported image format. Allowed: JPEG, PNG, GIF.")
-            return Response(error_resp.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_resp.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
         max_size = 5 * 1024 * 1024
         if image.size > max_size:
             error_resp = APIResponse(result="error", message="Image size exceeds the allowed limit (5 MB).")
-            return Response(error_resp.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_resp.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
         recipe.image = image
         recipe.save()
-        ingredients_output = [
-            IngredientResponse(
-                id=ir.ingredient.id,
-                name=ir.ingredient.name,
-                cost=ir.ingredient.cost,
-            )
-            for ir in recipe.ingredient_recipes.all()
-        ]
-        output = RecipeResponse(
-            id=recipe.id,
-            name=recipe.name,
-            description=recipe.description,
-            image=request.build_absolute_uri(recipe.image.url),
-            ingredients=ingredients_output,
-        )
+        output = build_recipe_response(recipe, request)
         response_data = RecipeImageUploadResponse(result="ok", message="Image successfully uploaded", data=output)
-        return Response(response_data.model_dump(mode='json'), status=status.HTTP_200_OK)
+        return Response(response_data.model_dump(mode="json"), status=status.HTTP_200_OK)
 
 
 class UserRegistrationView(PydanticAPIView):
@@ -317,16 +241,16 @@ class UserRegistrationView(PydanticAPIView):
         description="Registers a new user with the provided username, email, and password.",
     )
     def post(self, request, *args, **kwargs):
-        data = request.pydantic.model_dump(mode='json')
+        data = request.pydantic.model_dump(mode="json")
         if User.objects.filter(username=data['username']).exists():
             error_resp = APIResponse(result="error", message=f"Username '{data['username']}' is already taken.")
-            return Response(error_resp.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_resp.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=data['email']).exists():
             error_resp = APIResponse(result="error", message=f"Email '{data['email']}' is already in use.")
-            return Response(error_resp.model_dump(mode='json'), status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_resp.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
         User.objects.create_user(username=data['username'], email=data['email'], password=data['password'])
         response_data = UserRegistrationResponse(result="ok", message="User successfully registered.")
-        return Response(response_data.model_dump(mode='json'), status=status.HTTP_201_CREATED)
+        return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
 
 class CurrentUserView(APIView):

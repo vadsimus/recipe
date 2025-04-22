@@ -22,12 +22,21 @@ class IngredientCreateResponse(APIResponse):
     data: IngredientResponse
 
 
+class RecipeIngredientResponse(BaseModel):
+    id: int
+    name: str
+    cost: condecimal(max_digits=20, decimal_places=2)
+    ingredient_amount: int
+    ingredient_price: condecimal(max_digits=20, decimal_places=2)
+
+
 class RecipeResponse(BaseModel):
     id: int
     name: str
     description: str
     image: Optional[HttpUrl] = None
-    ingredients: List[IngredientResponse]
+    ingredients: List[RecipeIngredientResponse]
+    total_price: condecimal(max_digits=20, decimal_places=2)
 
 
 class RecipeListResponse(APIResponse):

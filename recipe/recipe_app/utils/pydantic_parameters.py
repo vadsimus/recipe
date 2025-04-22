@@ -16,7 +16,7 @@ class PydanticModelParameters:
                 name=field_name,
                 type=model_field.annotation,
                 location=self.location,
-                required=model_field.is_required,  # используем is_required
+                required=model_field.is_required,
                 description=model_field.description or "",
             )
             parameters.append(param)

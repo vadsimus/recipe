@@ -76,7 +76,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)  # Скрываем пароль
+    password = serializers.CharField(write_only=True)
     email = serializers.EmailField(required=True)
 
     class Meta:

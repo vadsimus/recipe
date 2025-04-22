@@ -102,11 +102,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout gh-pages branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
-          path: gh-pages
+          fetch-depth: 0
 
       - name: Download Allure results
         uses: actions/download-artifact@v4
@@ -117,12 +116,12 @@ jobs:
       - name: Generate Allure report
         uses: simple-elf/allure-report-action@v1.12
         with:
-          allure_results: allure-results
-          allure_history: gh-pages/allure-history
+          allure_results: 'allure-results'
+          allure_report: 'allure-report'
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: gh-pages/allure-history
+          publish_dir: allure-report

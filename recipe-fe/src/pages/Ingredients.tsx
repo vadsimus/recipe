@@ -19,7 +19,7 @@ const DataCard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchData({"endpoint": "/api/get_ingredients/"})
+    fetchData({"endpoint": "/api/ingredients/"})
       .then((result) => {
         if (result.result === "ok") {
           setData(result.data);

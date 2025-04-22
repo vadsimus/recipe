@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 from pydantic import BaseModel
 
@@ -326,3 +327,44 @@ class UserRegistrationView(PydanticAPIView):
         User.objects.create_user(username=data['username'], email=data['email'], password=data['password'])
         response_data = UserRegistrationResponse(result="ok", message="User successfully registered.")
         return Response(response_data.model_dump(mode='json'), status=status.HTTP_201_CREATED)
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]  # Require authentication
+
+    def get(self, request):
+        # user = request.user
+        return Response({
+            'success': True,
+            'data': {
+                'name': 'Serati Man',
+                'avatar': 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
+                'userid': '00000001',
+                'email': 'antdesign@alipay.com',
+                'signature': '海纳百川，有容乃大',
+                'title': '交互专家',
+                'group': '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
+                'tags': [
+                    {
+                        'key': '0',
+                        'label': '很有想法的',
+                    },
+                ],
+                'notifyCount': 12,
+                'unreadCount': 11,
+                'country': 'China',
+                'access': 'admin',
+                'geographic': {
+                    'province': {
+                        'label': '浙江省',
+                        'key': '330000',
+                    },
+                    'city': {
+                        'label': '杭州市',
+                        'key': '330100',
+                    },
+                },
+                'address': '西湖区工专路 77 号',
+                'phone': '0752-268888888',
+            },
+        })

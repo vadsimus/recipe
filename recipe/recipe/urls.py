@@ -23,6 +23,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 from recipe_app.views import (
+    CurrentUserView,
     IngredientListCreateView,
     RecipeListCreateView,
     RecipeDetailView,
@@ -47,6 +48,7 @@ urlpatterns = [
     # DRF-Spectacular endpoints for schema and interactive docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/currentUser/', CurrentUserView.as_view(), name='current-user'),
 ]
 
 if settings.DEBUG:

@@ -8,6 +8,7 @@ volumes:
   prometheus_data: {}
   grafana-data: {}
   mysql_data: {}
+  django_config: {}
 
 services:
   mysql:
@@ -27,28 +28,27 @@ services:
       - monitoring
 
   django:
-    build:
-      context: ./recipe
+    image: vadsimus8/recipe:latest  # Используем образ из Docker Hub
     container_name: django
     ports:
-      - "8000:8000"
+      - "8090:8000"
     networks:
       - monitoring
     environment:
       - DJANGO_SETTINGS_MODULE=recipe.settings
     depends_on:
-        - mysql
+      - mysql
     volumes:
-      - ./recipe/config:/app/config
+      - ./recipe/config:/app/config  # Локальная папка для конфигов
+      - django_config:/app/config_data  # Том для данных конфигурации
     command: >
       sh -c "
       until nc -z mysql 3306; do
         echo 'Waiting for MySQL...';
         sleep 2;
       done;
-      .venv/bin/python manage.py migrate &&
-      .venv/bin/uvicorn recipe.asgi:application --host 0.0.0.0 --port 8000"
-    
+      python manage.py migrate &&
+      uvicorn recipe.asgi:application --host 0.0.0.0 --port 8000"
 
   prometheus:
     image: prom/prometheus:latest
@@ -64,7 +64,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     ports:
-      - 9090:9090
+      - "9090:9090"
     networks:
       - monitoring
 
@@ -72,7 +72,7 @@ services:
     image: grafana/grafana-oss:latest
     container_name: grafana
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped

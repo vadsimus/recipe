@@ -1,5 +1,6 @@
 name: Django Backend Tests with Allure Report
 
+
 on:
   push:
     branches: [main]

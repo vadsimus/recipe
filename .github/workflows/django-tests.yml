@@ -65,6 +65,9 @@ jobs:
             echo "Waiting for MySQL..."
             sleep 2
           done
+          
+      - name: Create log directory
+        run: mkdir -p recipe/logs
 
       - name: Run migrations
         working-directory: ./recipe

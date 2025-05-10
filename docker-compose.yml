@@ -27,11 +27,11 @@ services:
     networks:
       - monitoring
 
-  django:
+  backend:
     image: vadsimus8/recipe:latest  # Используем образ из Docker Hub
     container_name: django
     ports:
-      - "8090:8000"
+      - "8000:8000"
     networks:
       - monitoring
     environment:
@@ -39,8 +39,8 @@ services:
     depends_on:
       - mysql
     volumes:
-      - ./recipe/config:/app/config  # Локальная папка для конфигов
-      - django_config:/app/config_data  # Том для данных конфигурации
+      - ./recipe/config:/app/config
+      - django_config:/app/config_data
     command: >
       sh -c "
       until nc -z mysql 3306; do
@@ -49,6 +49,19 @@ services:
       done;
       python manage.py migrate &&
       uvicorn recipe.asgi:application --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./recipe-fe
+    container_name: recipe-fe
+    ports:
+      - "80:80"
+    networks:
+      - monitoring
+    depends_on:
+      - backend
+    volumes:
+      - ./recipe-fe/nginx.conf:/etc/nginx/nginx.conf:ro
 
   prometheus:
     image: prom/prometheus:latest

@@ -1,0 +1,39 @@
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  django_config: {}
+
+services:
+  backend:
+    image: python:3.10
+    container_name: backend
+    working_dir: /app
+    command: >
+      sh -c "
+      pip install -r requirements.txt &&
+      python manage.py migrate &&
+      uvicorn recipe.asgi:application --reload --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./recipe:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=recipe.settings
+    networks:
+      - monitoring
+
+  frontend:
+    image: node:18
+    container_name: frontend
+    working_dir: /app
+    volumes:
+      - ./recipe-fe:/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring

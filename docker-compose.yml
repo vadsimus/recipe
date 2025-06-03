@@ -31,7 +31,7 @@ services:
     image: vadsimus8/recipe:latest  # Используем образ из Docker Hub
     container_name: django
     ports:
-      - "8000:8000"
+      - "8095:8095"
     networks:
       - monitoring
     environment:
@@ -48,7 +48,7 @@ services:
         sleep 2;
       done;
       python manage.py migrate &&
-      uvicorn recipe.asgi:application --host 0.0.0.0 --port 8000"
+      uvicorn recipe.asgi:application --host 0.0.0.0 --port 8095"
 
   frontend:
     build:

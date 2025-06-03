@@ -35,7 +35,7 @@ VOLUME /logs
 COPY . .
 
 # Expose the application port
-EXPOSE 8000
+EXPOSE 8095
 
 # Run the Django server using Uvicorn
-CMD ["uvicorn", "recipe.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "recipe.asgi:application", "--host", "0.0.0.0", "--port", "8095"]

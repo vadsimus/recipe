@@ -44,7 +44,7 @@ jobs:
       - name: Build and push frontend image
         uses: docker/build-push-action@v4
         with:
-          context: ./frontend
+          context: ./recipe-fe
           dockerfile: Dockerfile
           push: true
           tags: |

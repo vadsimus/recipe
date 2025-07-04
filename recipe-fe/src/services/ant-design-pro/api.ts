@@ -33,6 +33,57 @@ export async function fetchData(options?: { [key: string]: any }) {
   return resp
 }
 
+export async function postData<T = any>(options: {
+  endpoint: string;
+  data?: any;
+  headers?: { [key: string]: any };
+}) {
+  const token = localStorage.getItem('access_token');
+  const resp = await request<T>(options.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+    data: options.data,
+  });
+  return resp;
+}
+
+export async function deleteData<T = any>(options: {
+  endpoint: string;
+  headers?: { [key: string]: any };
+}) {
+  const token = localStorage.getItem('access_token');
+  const resp = await request<T>(options.endpoint, {
+    method: 'DELETE',
+    headers: {
+      Authorization: token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+  });
+  return resp;
+}
+
+export async function putData<T = any>(options: {
+  endpoint: string;
+  data?: any;
+  headers?: { [key: string]: any };
+}) {
+  const token = localStorage.getItem('access_token');
+  const resp = await request<T>(options.endpoint, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+    data: options.data,
+  });
+  return resp;
+}
+
 /** 退出登录接口 POST /api/login/outLogin */
 export async function outLogin(options?: { [key: string]: any }) {
   return request<Record<string, any>>('/api/login/outLogin', {

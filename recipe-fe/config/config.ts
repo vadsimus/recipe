@@ -20,10 +20,14 @@ export default defineConfig({
   ignoreMomentLocale: true,
   proxy: {
     '/api/': {
-      target: 'http://localhost:8000',
+      target: 'http://backend:8000',
       changeOrigin: true,
       pathRewrite: { '^': '' }, // Remove /api prefix if needed
     },
+    '/media/': {
+    target: 'http://backend:8000',
+    changeOrigin: true,
+  },
   },
   fastRefresh: true,
   model: {},

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from pydantic import BaseModel
 
 from .models import Ingredient, Recipe, IngredientRecipe
@@ -28,6 +28,7 @@ from recipe_app.schemas.responses import (
 from .pydantic_base_view import PydanticAPIView, FileUploadPydanticAPIView
 from .utils.pydantic_parameters import PydanticModelParameters
 from .utils.response_builders import build_recipe_response
+from pydantic import ValidationError
 
 
 class IngredientListCreateView(PydanticAPIView):
@@ -35,7 +36,6 @@ class IngredientListCreateView(PydanticAPIView):
     pydantic_model = IngredientInput
 
     @extend_schema(
-        parameters=PydanticModelParameters(IngredientInput).get_parameters(),
         responses={200: IngredientListResponse},
         summary="List Ingredients",
         description="Fetch ingredients for the authenticated user with an optional filter by name.",
@@ -62,6 +62,48 @@ class IngredientListCreateView(PydanticAPIView):
         output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost)
         response_data = IngredientCreateResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
+
+
+class IngredientDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Delete Ingredient",
+        description="Delete an ingredient by ID if it belongs to the current user. Returns 204 on success.",
+        responses={
+            204: OpenApiResponse(description="Ingredient deleted successfully"),
+            404: OpenApiResponse(description="Not found or does not belong to user"),
+        },
+    )
+    def delete(self, request, pk, *args, **kwargs):
+        ingredient = get_object_or_404(Ingredient, pk=pk, user=request.user)
+        ingredient.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="Update Ingredient",
+        description="Update an ingredient by ID if it belongs to the current user. Returns the updated ingredient.",
+        request=IngredientInput,
+        responses={
+            200: IngredientResponse,
+            400: OpenApiResponse(description="Wrong data format or validation error"),
+            404: OpenApiResponse(description="Not found or does not belong to user"),
+        },
+    )
+    def put(self, request, pk, *args, **kwargs):
+        ingredient = get_object_or_404(Ingredient, pk=pk, user=request.user)
+
+        try:
+            validated = IngredientInput(**request.data)
+        except ValidationError as e:
+            return Response({'error': e.errors()}, status=status.HTTP_400_BAD_REQUEST)
+
+        ingredient.name = validated.name
+        ingredient.cost = validated.cost
+        ingredient.save()
+
+        response = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost)
+        return Response(response.model_dump(mode="json"), status=status.HTTP_200_OK)
 
 
 class RecipeListCreateView(PydanticAPIView):
@@ -185,6 +227,17 @@ class RecipeDetailView(PydanticAPIView):
         output = build_recipe_response(recipe, request)
         response_data = RecipePartialUpdateResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"))
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Recipe",
+        description="Deletes a specific recipe for the authenticated user.",
+    )
+    @transaction.atomic
+    def delete(self, request, pk, *args, **kwargs):
+        recipe = self.get_object(pk)
+        recipe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeImageUploadView(FileUploadPydanticAPIView):

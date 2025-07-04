@@ -1,6 +1,7 @@
 from typing import List
 from recipe_app.models import IngredientRecipe, Recipe
 from recipe_app.schemas.responses import RecipeResponse, RecipeIngredientResponse
+from recipe_app.utils.common import round_decimal
 
 
 def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
@@ -18,7 +19,7 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
                 name=ir.ingredient.name,
                 cost=ir.ingredient.cost,
                 ingredient_amount=amount,
-                ingredient_price=price,
+                ingredient_price=round_decimal(price),
             )
         )
 
@@ -27,7 +28,7 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
         id=recipe.id,
         name=recipe.name,
         description=recipe.description,
-        image=request.build_absolute_uri(recipe.image.url) if recipe.image else None,
+        image=recipe.image.url if recipe.image else None,
         ingredients=ingredients_data,
         total_price=total,
     )

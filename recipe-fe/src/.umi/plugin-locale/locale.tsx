@@ -4,15 +4,15 @@
 import React from 'react';
 import { ConfigProvider } from 'antd';
 
-import moment from '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/bn-bd';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/en';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/fa';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/id';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/ja';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/pt-br';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/zh-cn';
-import '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/dayjs/locale/zh-tw';
+import moment from '/app/node_modules/dayjs';
+import '/app/node_modules/dayjs/locale/bn-bd';
+import '/app/node_modules/dayjs/locale/en';
+import '/app/node_modules/dayjs/locale/fa';
+import '/app/node_modules/dayjs/locale/id';
+import '/app/node_modules/dayjs/locale/ja';
+import '/app/node_modules/dayjs/locale/pt-br';
+import '/app/node_modules/dayjs/locale/zh-cn';
+import '/app/node_modules/dayjs/locale/zh-tw';
 import { RawIntlProvider, getLocale, getDirection , setIntl, getIntl, localeInfo, event, LANG_CHANGE_EVENT } from './localeExports';
 
 

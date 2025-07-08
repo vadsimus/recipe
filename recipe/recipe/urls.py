@@ -29,12 +29,14 @@ from recipe_app.views import (
     RecipeDetailView,
     RecipeImageUploadView,
     UserRegistrationView,
+    IngredientDetailView
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Ingredient endpoints
     path('api/ingredients/', IngredientListCreateView.as_view(), name='ingredient-list-create'),
+    path('api/ingredients/<int:pk>/', IngredientDetailView.as_view(), name='ingredient-detail'),
     # Recipe endpoints
     path('api/recipes/', RecipeListCreateView.as_view(), name='recipe-list-create'),
     path('api/recipes/<int:pk>/', RecipeDetailView.as_view(), name='recipe-detail'),

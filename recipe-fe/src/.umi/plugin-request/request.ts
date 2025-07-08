@@ -6,8 +6,8 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
   type AxiosError,
-} from '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/axios';
-import useUmiRequest, { UseRequestProvider } from '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/@umijs/plugins/node_modules/@ahooksjs/use-request';
+} from '/app/node_modules/axios';
+import useUmiRequest, { UseRequestProvider } from '/app/node_modules/@umijs/plugins/node_modules/@ahooksjs/use-request';
 import { ApplyPluginsType } from 'umi';
 import { getPluginManager } from '../core/plugin';
 
@@ -26,7 +26,7 @@ import {
   PaginatedOptionsWithFormat,
   PaginatedParams,
   PaginatedResult,
-} from '/Users/vadimmorozov/git/recipe/recipe-fe/node_modules/@umijs/plugins/node_modules/@ahooksjs/use-request/es/types';
+} from '/app/node_modules/@umijs/plugins/node_modules/@ahooksjs/use-request/es/types';
 
 type ResultWithData< T = any > = { data?: T; [key: string]: any };
 

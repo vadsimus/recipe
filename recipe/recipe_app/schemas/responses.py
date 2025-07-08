@@ -34,7 +34,7 @@ class RecipeResponse(BaseModel):
     id: int
     name: str
     description: str
-    image: Optional[HttpUrl] = None
+    image: Optional[str] = None
     ingredients: List[RecipeIngredientResponse]
     total_price: condecimal(max_digits=20, decimal_places=2)
 

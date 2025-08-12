@@ -45,7 +45,7 @@ class IngredientListCreateView(PydanticAPIView):
         queryset = Ingredient.objects.filter(user=request.user)
         if name:
             queryset = queryset.filter(name__icontains=name)
-        output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost) for i in queryset]
+        output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost, unit=i.unit) for i in queryset]
         response_data = IngredientListResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"))
 
@@ -59,7 +59,7 @@ class IngredientListCreateView(PydanticAPIView):
     def post(self, request, *args, **kwargs):
         data = request.pydantic.model_dump(mode="json")
         ingredient = Ingredient.objects.create(user=request.user, **data)
-        output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost)
+        output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit)
         response_data = IngredientCreateResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
@@ -100,9 +100,12 @@ class IngredientDetailView(APIView):
 
         ingredient.name = validated.name
         ingredient.cost = validated.cost
+        ingredient.unit = validated.unit
         ingredient.save()
 
-        response = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost)
+        response = IngredientResponse(
+            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit
+        )
         return Response(response.model_dump(mode="json"), status=status.HTTP_200_OK)
 
 
@@ -311,37 +314,39 @@ class CurrentUserView(APIView):
 
     def get(self, request):
         # user = request.user
-        return Response({
-            'success': True,
-            'data': {
-                'name': 'Serati Man',
-                'avatar': 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
-                'userid': '00000001',
-                'email': 'antdesign@alipay.com',
-                'signature': '海纳百川，有容乃大',
-                'title': '交互专家',
-                'group': '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
-                'tags': [
-                    {
-                        'key': '0',
-                        'label': '很有想法的',
+        return Response(
+            {
+                'success': True,
+                'data': {
+                    'name': 'Serati Man',
+                    'avatar': 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
+                    'userid': '00000001',
+                    'email': 'antdesign@alipay.com',
+                    'signature': '海纳百川，有容乃大',
+                    'title': '交互专家',
+                    'group': '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
+                    'tags': [
+                        {
+                            'key': '0',
+                            'label': '很有想法的',
+                        },
+                    ],
+                    'notifyCount': 12,
+                    'unreadCount': 11,
+                    'country': 'China',
+                    'access': 'admin',
+                    'geographic': {
+                        'province': {
+                            'label': '浙江省',
+                            'key': '330000',
+                        },
+                        'city': {
+                            'label': '杭州市',
+                            'key': '330100',
+                        },
                     },
-                ],
-                'notifyCount': 12,
-                'unreadCount': 11,
-                'country': 'China',
-                'access': 'admin',
-                'geographic': {
-                    'province': {
-                        'label': '浙江省',
-                        'key': '330000',
-                    },
-                    'city': {
-                        'label': '杭州市',
-                        'key': '330100',
-                    },
+                    'address': '西湖区工专路 77 号',
+                    'phone': '0752-268888888',
                 },
-                'address': '西湖区工专路 77 号',
-                'phone': '0752-268888888',
-            },
-        })
+            }
+        )

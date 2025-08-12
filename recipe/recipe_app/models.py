@@ -4,12 +4,18 @@ from rest_framework.exceptions import ValidationError
 
 
 class Ingredient(models.Model):
+    class Unit(models.TextChoices):
+        LITER = 'l', 'liters'
+        GRAM = 'g', 'grams'
+        PIECE = 'pcs', 'pieces'
+
     name = models.CharField(max_length=100)
     cost = models.DecimalField(decimal_places=2, max_digits=20, default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ingredients')
+    unit = models.CharField(max_length=3, choices=Unit.choices, default=Unit.GRAM)
 
     class Meta:
-        unique_together = ('name', 'user')
+        unique_together = ('name', 'unit', 'user')
 
     def __str__(self):
         return self.name

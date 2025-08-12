@@ -1,5 +1,5 @@
 from typing import List, Optional, Any
-from pydantic import BaseModel, condecimal, HttpUrl
+from pydantic import BaseModel, condecimal
 
 
 class APIResponse(BaseModel):
@@ -12,6 +12,7 @@ class IngredientResponse(BaseModel):
     id: int
     name: str
     cost: condecimal(max_digits=20, decimal_places=2)
+    unit: str
 
 
 class IngredientListResponse(APIResponse):
@@ -26,6 +27,7 @@ class RecipeIngredientResponse(BaseModel):
     id: int
     name: str
     cost: condecimal(max_digits=20, decimal_places=2)
+    unit: str
     ingredient_amount: int
     ingredient_price: condecimal(max_digits=20, decimal_places=2)
 

@@ -18,6 +18,7 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
                 id=ir.ingredient.id,
                 name=ir.ingredient.name,
                 cost=ir.ingredient.cost,
+                unit=ir.ingredient.unit,
                 ingredient_amount=amount,
                 ingredient_price=round_decimal(price),
             )

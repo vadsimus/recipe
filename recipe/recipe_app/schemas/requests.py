@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field, condecimal, constr, conint
-from typing import List
+from typing import List, Literal
 
 
 class IngredientInput(BaseModel):
     name: constr(max_length=100)
     cost: condecimal(max_digits=20, decimal_places=2)
+    unit: Literal['g', 'l', 'pcs'] = 'g'
 
 
 class IngredientRecipeInput(BaseModel):

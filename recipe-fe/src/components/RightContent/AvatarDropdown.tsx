@@ -43,7 +43,18 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
    * 退出登录，并且将当前的 url 保存
    */
   const loginOut = async () => {
-    await outLogin();
+      const refresh = localStorage.getItem('refresh_token');
+      if (refresh) {
+        await fetch('/api/token/logout/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refresh }),
+        });
+      }
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
     const { search, pathname } = window.location;
     const urlParams = new URL(window.location.href).searchParams;
     /** 此方法会跳转到 redirect 参数所在的位置 */

@@ -120,9 +120,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y default-jre wget unzip
-          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
-          unzip allure-commandline.zip
-          sudo mv allure-*/ /opt/allure
+          wget https://github.com/allure-framework/allure2/releases/download/2.29.0/allure-commandline-2.29.0.zip
+          unzip allure-commandline-2.29.0.zip
+          sudo mv allure-2.29.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
           allure --version
 

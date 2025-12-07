@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react';
 import { ProTable, ActionType } from '@ant-design/pro-components';
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, message } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, message, Select } from 'antd';
 import {deleteData, fetchData, postData, putData} from '@/services/ant-design-pro/api';
 
 interface Ingredient {
   id: number;
   name: string;
   cost: string;
+  unit: string;
+  cost_unit: string;
 }
 
 const IngredientsPage = () => {
@@ -18,6 +20,11 @@ const IngredientsPage = () => {
   const openAddModal = () => {
     setEditingIngredient(null);
     form.resetFields();
+    // Set default values for new ingredient
+    form.setFieldsValue({
+      unit: 'g',
+      cost_unit: '1kg',
+    });
     setModalVisible(true);
   };
 
@@ -26,6 +33,8 @@ const IngredientsPage = () => {
     form.setFieldsValue({
       name: ingredient.name,
       cost: parseFloat(ingredient.cost),
+      unit: ingredient.unit,
+      cost_unit: ingredient.cost_unit || '1kg',
     });
     setModalVisible(true);
   };
@@ -88,8 +97,9 @@ const IngredientsPage = () => {
             dataIndex: 'name',
           },
           {
-            title: 'Стоимость за единицу',
+            title: 'Стоимость',
             dataIndex: 'cost',
+            render: (cost, record) => `${cost} за ${record.cost_unit || '1kg'}`,
           },
           {
             title: 'Действия',
@@ -129,11 +139,38 @@ const IngredientsPage = () => {
             <Input />
           </Form.Item>
           <Form.Item
+            name="unit"
+            label="Тип единицы измерения"
+            rules={[{ required: true, message: 'Выберите тип единицы' }]}
+          >
+            <Select>
+              <Select.Option value="g">Граммы (g)</Select.Option>
+              <Select.Option value="l">Литры (l)</Select.Option>
+              <Select.Option value="pcs">Штуки (pcs)</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
             name="cost"
-            label="Стоимость за единицу"
+            label="Стоимость"
             rules={[{ required: true, message: 'Введите стоимость' }]}
           >
             <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="cost_unit"
+            label="Стоимость за"
+            rules={[{ required: true, message: 'Выберите единицу стоимости' }]}
+          >
+            <Select>
+              <Select.Option value="1kg">1 кг</Select.Option>
+              <Select.Option value="100g">100 г</Select.Option>
+              <Select.Option value="500g">500 г</Select.Option>
+              <Select.Option value="1l">1 л</Select.Option>
+              <Select.Option value="100ml">100 мл</Select.Option>
+              <Select.Option value="500ml">500 мл</Select.Option>
+              <Select.Option value="1pcs">1 штука</Select.Option>
+              <Select.Option value="10pcs">10 штук</Select.Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

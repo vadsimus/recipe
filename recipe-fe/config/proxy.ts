@@ -27,7 +27,7 @@ export default {
    */
   dev: {
     '/api/': {
-      target: 'http://backend:8000',
+      target: 'http://localhost:8000',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
@@ -42,7 +42,7 @@ export default {
   },
   pre: {
     '/api/': {
-      target: 'http://backend:8000',
+      target: 'http://localhost:8000',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },

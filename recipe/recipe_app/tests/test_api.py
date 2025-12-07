@@ -98,8 +98,8 @@ def test_create_recipe(base_url, auth_headers):
     assert item["name"] == "Flour"
     assert float(item["cost"]) == 1.0
     assert item["ingredient_amount"] == 500
-    assert float(item["ingredient_price"]) == pytest.approx(500.0)
-    assert float(data["total_price"]) == pytest.approx(500.0)
+    assert float(item["ingredient_price"]) == pytest.approx(0.5)
+    assert float(data["total_price"]) == pytest.approx(0.5)
 
 
 def test_list_recipes_with_ingredients(base_url, auth_headers):
@@ -173,5 +173,5 @@ def test_edit_recipe(base_url, auth_headers):
     item = d["ingredients"][0]
     assert item["name"] == "Milk"
     assert item["ingredient_amount"] == 200
-    assert float(item["ingredient_price"]) == pytest.approx(200 * float(milk["cost"]))
+    assert float(item["ingredient_price"]) == pytest.approx(200 * (float(milk["cost"])/1000))
     assert pytest.approx(float(item["ingredient_price"])) == float(d["total_price"])

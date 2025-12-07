@@ -20,12 +20,12 @@ export default defineConfig({
   ignoreMomentLocale: true,
   proxy: {
     '/api/': {
-      target: 'http://backend:8000',
+      target: 'http://localhost:8000',
       changeOrigin: true,
       pathRewrite: { '^': '' }, // Remove /api prefix if needed
     },
     '/media/': {
-    target: 'http://backend:8000',
+    target: 'http://localhost:8000',
     changeOrigin: true,
   },
   },

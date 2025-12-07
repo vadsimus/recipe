@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import BytesIO
 from PIL import Image
 from django.contrib.auth.models import User
@@ -43,10 +44,10 @@ class RecipeAPITestCase(APITestCase):
 
         self.assertEqual(recipe.ingredients.count(), 2)
         self.assertTrue(
-            IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient1, ingredient_amount=1).exists()
+            IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient1, ingredient_amount=Decimal('0.001000')).exists()
         )
         self.assertTrue(
-            IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient2, ingredient_amount=2).exists()
+            IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient2, ingredient_amount=Decimal('0.002000')).exists()
         )
 
     def test_list_recipes(self):

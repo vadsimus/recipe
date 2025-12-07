@@ -1,6 +1,5 @@
 name: Django Backend Tests with Allure Report
 
-
 on:
   push:
     branches: [main]
@@ -117,11 +116,19 @@ jobs:
           name: allure-results
           path: allure-results
 
+      - name: Install Allure CLI
+        run: |
+          sudo apt update
+          sudo apt install -y default-jre wget unzip
+          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
+          unzip allure-commandline.zip
+          sudo mv allure-*/ /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+          allure --version
+
       - name: Generate Allure report
-        uses: simple-elf/allure-report-action@v1.18
-        with:
-          allure_results: 'allure-results'
-          allure_report: 'allure-report'
+        run: |
+          allure generate allure-results -o allure-report --clean
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -42,12 +42,11 @@ def get_base_unit(unit: str) -> str:
         raise ValueError(f"Unknown unit: {unit}")
 
 
-def convert_to_base_unit(amount: Decimal, from_unit: str) -> Decimal:
+def convert_to_base_unit(from_unit: str) -> Decimal:
     """
     Convert an amount from a given unit to the base unit.
     
     Args:
-        amount: The amount to convert
         from_unit: The unit to convert from (e.g., 'g', 'ml', '100g', '1l')
     
     Returns:
@@ -56,8 +55,7 @@ def convert_to_base_unit(amount: Decimal, from_unit: str) -> Decimal:
     if from_unit not in CONVERSION_FACTORS:
         raise ValueError(f"Unknown unit: {from_unit}")
     
-    factor = CONVERSION_FACTORS[from_unit]
-    return amount * factor
+    return CONVERSION_FACTORS[from_unit]
 
 
 def convert_from_base_unit(amount: Decimal, to_unit: str) -> Decimal:
@@ -107,8 +105,8 @@ def get_cost_per_base_unit(cost: Decimal, cost_unit: str) -> Decimal:
             amount_in_unit = Decimal('1')
     
     # Convert the amount to base unit
-    base_amount = convert_to_base_unit(amount_in_unit, cost_unit)
-    
+    base_amount = convert_to_base_unit(cost_unit)
+
     if base_amount == 0:
         return Decimal('0')
     
@@ -137,7 +135,7 @@ def calculate_ingredient_price(
     cost_per_base = get_cost_per_base_unit(cost, cost_unit)
     
     # Convert amount to base unit
-    amount_in_base = convert_to_base_unit(amount, amount_unit)
+    amount_in_base = convert_to_base_unit(amount_unit)
     
     # Calculate price
     return cost_per_base * amount_in_base

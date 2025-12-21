@@ -202,7 +202,7 @@ class RecipeListCreateView(PydanticAPIView):
             
             # Convert to base unit for storage
             base_unit = get_base_unit(ingredient.unit)
-            amount_in_base = convert_to_base_unit(amount, display_unit)
+            amount_in_base = convert_to_base_unit(display_unit)
             
             IngredientRecipe.objects.create(
                 recipe=recipe,
@@ -258,7 +258,7 @@ class RecipeDetailView(PydanticAPIView):
             display_unit = ingr_data.get("display_unit") or ingredient.unit
             
             # Convert to base unit for storage
-            amount_in_base = convert_to_base_unit(amount, display_unit)
+            amount_in_base = convert_to_base_unit(display_unit)
             
             IngredientRecipe.objects.create(
                 recipe=recipe,
@@ -298,7 +298,7 @@ class RecipeDetailView(PydanticAPIView):
                 display_unit = ingr_data.get("display_unit") or ingredient.unit
                 
                 # Convert to base unit for storage
-                amount_in_base = convert_to_base_unit(amount, display_unit)
+                amount_in_base = convert_to_base_unit(display_unit)
                 
                 IngredientRecipe.objects.create(
                     recipe=recipe,

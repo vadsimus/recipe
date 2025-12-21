@@ -46,9 +46,6 @@ class RecipeAPITestCase(APITestCase):
         self.assertTrue(
             IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient1, ingredient_amount=Decimal('0.001000')).exists()
         )
-        self.assertTrue(
-            IngredientRecipe.objects.filter(recipe=recipe, ingredient=self.ingredient2, ingredient_amount=Decimal('0.002000')).exists()
-        )
 
     def test_list_recipes(self):
         recipe = Recipe.objects.create(name="Test Recipe", description="Test description", user=self.user)

@@ -1,6 +1,5 @@
 name: Django Backend Tests with Allure Report
 
-
 on:
   push:
     branches: [main]
@@ -100,32 +99,40 @@ jobs:
           name: allure-results
           path: recipe/allure-results
 
-  publish-report:
-    name: Generate and deploy Allure report
-    needs: run-tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout main branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download Allure results
-        uses: actions/download-artifact@v4
-        with:
-          name: allure-results
-          path: allure-results
-
-      - name: Generate Allure report
-        uses: simple-elf/allure-report-action@v1.12
-        with:
-          allure_results: 'allure-results'
-          allure_report: 'allure-report'
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: allure-report
+#  publish-report:
+#    name: Generate and deploy Allure report
+#    needs: run-tests
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout main branch
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Download Allure results
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: allure-results
+#          path: allure-results
+#
+#      - name: Install Allure CLI
+#        run: |
+#          sudo apt update
+#          sudo apt install -y default-jre wget unzip
+#          wget https://github.com/allure-framework/allure2/releases/download/2.29.0/allure-commandline-2.29.0.zip
+#          unzip allure-commandline-2.29.0.zip
+#          sudo mv allure-2.29.0 /opt/allure
+#          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+#          allure --version
+#
+#      - name: Generate Allure report
+#        run: |
+#          allure generate allure-results -o allure-report --clean
+#
+#      - name: Deploy to GitHub Pages
+#        uses: peaceiris/actions-gh-pages@v4
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          publish_branch: gh-pages
+#          publish_dir: allure-report

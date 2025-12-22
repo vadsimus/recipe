@@ -45,7 +45,7 @@ class IngredientListCreateView(PydanticAPIView):
         queryset = Ingredient.objects.filter(user=request.user)
         if name:
             queryset = queryset.filter(name__icontains=name)
-        output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost, unit=i.unit) for i in queryset]
+        output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost, unit=i.unit, cost_unit=i.cost_unit) for i in queryset]
         response_data = IngredientListResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"))
 
@@ -57,9 +57,30 @@ class IngredientListCreateView(PydanticAPIView):
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
+        from recipe_app.utils.unit_converter import get_cost_per_base_unit, get_base_unit
+        from decimal import Decimal
+        
         data = request.pydantic.model_dump(mode="json")
+        # Convert cost to base unit before storing
+        user_cost = Decimal(str(data['cost']))
+        user_cost_unit = data['cost_unit']
+        base_unit_type = get_base_unit(data['unit'])
+        
+        # Calculate cost per base unit (e.g., cost per 1kg, 1L, or 1pcs)
+        cost_per_base = get_cost_per_base_unit(user_cost, user_cost_unit)
+        
+        # Store cost in base unit and set cost_unit to base unit
+        data['cost'] = cost_per_base
+        # Set cost_unit to base unit format (1kg, 1l, or 1pcs)
+        if base_unit_type == 'kg':
+            data['cost_unit'] = '1kg'
+        elif base_unit_type == 'L':
+            data['cost_unit'] = '1l'
+        else:  # pcs
+            data['cost_unit'] = '1pcs'
+        
         ingredient = Ingredient.objects.create(user=request.user, **data)
-        output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit)
+        output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit, cost_unit=ingredient.cost_unit)
         response_data = IngredientCreateResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
@@ -98,13 +119,34 @@ class IngredientDetailView(APIView):
         except ValidationError as e:
             return Response({'error': e.errors()}, status=status.HTTP_400_BAD_REQUEST)
 
+        from recipe_app.utils.unit_converter import get_cost_per_base_unit, get_base_unit
+        from decimal import Decimal
+        
         ingredient.name = validated.name
-        ingredient.cost = validated.cost
         ingredient.unit = validated.unit
+        
+        # Convert cost to base unit before storing
+        user_cost = Decimal(str(validated.cost))
+        user_cost_unit = validated.cost_unit
+        base_unit_type = get_base_unit(validated.unit)
+        
+        # Calculate cost per base unit (e.g., cost per 1kg, 1L, or 1pcs)
+        cost_per_base = get_cost_per_base_unit(user_cost, user_cost_unit)
+        
+        # Store cost in base unit and set cost_unit to base unit
+        ingredient.cost = cost_per_base
+        # Set cost_unit to base unit format (1kg, 1l, or 1pcs)
+        if base_unit_type == 'kg':
+            ingredient.cost_unit = '1kg'
+        elif base_unit_type == 'L':
+            ingredient.cost_unit = '1l'
+        else:  # pcs
+            ingredient.cost_unit = '1pcs'
+        
         ingredient.save()
 
         response = IngredientResponse(
-            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit
+            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit, cost_unit=ingredient.cost_unit
         )
         return Response(response.model_dump(mode="json"), status=status.HTTP_200_OK)
 
@@ -142,6 +184,9 @@ class RecipeListCreateView(PydanticAPIView):
             description=data["description"],
             user=request.user,
         )
+        from recipe_app.utils.unit_converter import convert_to_base_unit, get_base_unit
+        from decimal import Decimal
+        
         for ingr_data in data.get("ingredients", []):
             ingredient = Ingredient.objects.filter(id=ingr_data["ingredient_id"], user=request.user).first()
             if not ingredient:
@@ -150,10 +195,20 @@ class RecipeListCreateView(PydanticAPIView):
                     message=f'Invalid pk "{ingr_data["ingredient_id"]}" - object does not exist.',
                 )
                 return Response(error_response.model_dump(mode="json"), status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get amount and display unit
+            amount = Decimal(str(ingr_data["ingredient_amount"]))
+            display_unit = ingr_data.get("display_unit") or ingredient.unit
+            
+            # Convert to base unit for storage
+            base_unit = get_base_unit(ingredient.unit)
+            amount_in_base = convert_to_base_unit(display_unit)
+            
             IngredientRecipe.objects.create(
                 recipe=recipe,
                 ingredient=ingredient,
-                ingredient_amount=ingr_data["ingredient_amount"],
+                ingredient_amount=amount_in_base,
+                display_unit=display_unit,
             )
         output = build_recipe_response(recipe, request)
         response_data = RecipeCreateResponse(result="ok", data=output)
@@ -192,12 +247,24 @@ class RecipeDetailView(PydanticAPIView):
         recipe.description = data["description"]
         recipe.save()
         recipe.ingredient_recipes.all().delete()
+        from recipe_app.utils.unit_converter import convert_to_base_unit, get_base_unit
+        from decimal import Decimal
+        
         for ingr_data in data.get("ingredients", []):
             ingredient = get_object_or_404(Ingredient, id=ingr_data["ingredient_id"], user=request.user)
+            
+            # Get amount and display unit
+            amount = Decimal(str(ingr_data["ingredient_amount"]))
+            display_unit = ingr_data.get("display_unit") or ingredient.unit
+            
+            # Convert to base unit for storage
+            amount_in_base = convert_to_base_unit(display_unit)
+            
             IngredientRecipe.objects.create(
                 recipe=recipe,
                 ingredient=ingredient,
-                ingredient_amount=ingr_data["ingredient_amount"],
+                ingredient_amount=amount_in_base,
+                display_unit=display_unit,
             )
         output = build_recipe_response(recipe, request)
         response_data = RecipeUpdateResponse(result="ok", data=output)
@@ -220,12 +287,24 @@ class RecipeDetailView(PydanticAPIView):
         recipe.save()
         if "ingredients" in partial_data:
             recipe.ingredient_recipes.all().delete()
+            from recipe_app.utils.unit_converter import convert_to_base_unit, get_base_unit
+            from decimal import Decimal
+            
             for ingr_data in partial_data.get("ingredients", []):
                 ingredient = get_object_or_404(Ingredient, id=ingr_data["ingredient_id"], user=request.user)
+                
+                # Get amount and display unit
+                amount = Decimal(str(ingr_data["ingredient_amount"]))
+                display_unit = ingr_data.get("display_unit") or ingredient.unit
+                
+                # Convert to base unit for storage
+                amount_in_base = convert_to_base_unit(display_unit)
+                
                 IngredientRecipe.objects.create(
                     recipe=recipe,
                     ingredient=ingredient,
-                    ingredient_amount=ingr_data["ingredient_amount"],
+                    ingredient_amount=amount_in_base,
+                    display_unit=display_unit,
                 )
         output = build_recipe_response(recipe, request)
         response_data = RecipePartialUpdateResponse(result="ok", data=output)
@@ -310,43 +389,20 @@ class UserRegistrationView(PydanticAPIView):
 
 
 class CurrentUserView(APIView):
-    permission_classes = [IsAuthenticated]  # Require authentication
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # user = request.user
+        user: User = request.user
+        full_username: str = user.get_full_name()
+
         return Response(
             {
                 'success': True,
                 'data': {
-                    'name': 'Serati Man',
-                    'avatar': 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
-                    'userid': '00000001',
-                    'email': 'antdesign@alipay.com',
-                    'signature': '海纳百川，有容乃大',
-                    'title': '交互专家',
-                    'group': '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
-                    'tags': [
-                        {
-                            'key': '0',
-                            'label': '很有想法的',
-                        },
-                    ],
-                    'notifyCount': 12,
-                    'unreadCount': 11,
-                    'country': 'China',
-                    'access': 'admin',
-                    'geographic': {
-                        'province': {
-                            'label': '浙江省',
-                            'key': '330000',
-                        },
-                        'city': {
-                            'label': '杭州市',
-                            'key': '330100',
-                        },
-                    },
-                    'address': '西湖区工专路 77 号',
-                    'phone': '0752-268888888',
+                    'name': user.username,
+                    'avatar': f"https://avatar.iran.liara.run/username?username={full_username if full_username else user.username}",
+                    'userid': str(user.id),
+                    'email': user.email,
                 },
             }
         )

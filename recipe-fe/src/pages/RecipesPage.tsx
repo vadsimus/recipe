@@ -22,11 +22,16 @@ const {Text, Paragraph} = Typography;
 interface IngredientOption {
     id: number;
     name: string;
+    unit: string;
 }
 
 interface RecipeIngredient {
-    ingredient: IngredientOption;
+    id: number;
+    name: string;
+    cost: string;
+    unit: string;
     ingredient_amount: number;
+    ingredient_price: string;
 }
 
 interface Recipe {
@@ -83,12 +88,22 @@ const RecipesPage = () => {
         setUploadedImageFile(null);
         setEditMode(false);
 
+        // Format ingredient amounts to remove trailing zeros but preserve precision
+        const formatAmount = (value: number): number => {
+            // Convert to string with enough precision, then remove trailing zeros
+            const str = value.toFixed(6);
+            // Remove trailing zeros but keep at least one decimal place if needed
+            const cleaned = str.replace(/\.?0+$/, '');
+            return parseFloat(cleaned);
+        };
+        
         form.setFieldsValue({
             name: recipe.name,
             description: recipe.description,
             ingredients: recipe.ingredients.map((i) => ({
                 ingredient_id: i.id,
-                ingredient_amount: i.ingredient_amount,
+                ingredient_amount: formatAmount(i.ingredient_amount),
+                display_unit: i.unit,
             })),
         });
 
@@ -324,13 +339,60 @@ const RecipesPage = () => {
                     </Form.Item>
 
                     {/* Ингредиенты */}
+                    {!editMode && selectedRecipe && (
+                        <div style={{marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #f0f0f0'}}>
+                            <Space style={{display: 'flex', width: '100%'}}>
+                                <Text style={{width: 180, fontWeight: 600}}>Ингредиент</Text>
+                                <Text style={{width: 120, fontWeight: 600}}>Количество</Text>
+                                <Text style={{width: 100, textAlign: 'right', fontWeight: 600}}>Цена</Text>
+                            </Space>
+                        </div>
+                    )}
                     <Form.List name="ingredients">
                         {(fields, {add, remove}) => (
                             <>
                                 {fields.map(({key, name, ...restField}) => {
                                     const ingredientId = form.getFieldValue(['ingredients', name, 'ingredient_id']);
-                                    const ingredientAmount = form.getFieldValue(['ingredients', name, 'ingredient_amount']);
+                                    const ingredientAmountRaw = form.getFieldValue(['ingredients', name, 'ingredient_amount']);
+                                    const displayUnit = form.getFieldValue(['ingredients', name, 'display_unit']);
                                     const ingredientName = ingredientsOptions.find((i) => i.id === ingredientId)?.name || '-';
+                                    const selectedIngredient = ingredientsOptions.find((i) => i.id === ingredientId);
+                                    const ingredientUnit = selectedIngredient?.unit || 'g';
+                                    
+                                    // Format amount to remove trailing zeros but preserve precision for small values
+                                    const formatAmount = (value: number | undefined): number | undefined => {
+                                        if (value === undefined || value === null) return undefined;
+                                        // Convert to string, remove trailing zeros, but keep at least one decimal if needed
+                                        const str = value.toString();
+                                        // If it's a whole number, return as integer
+                                        if (Number.isInteger(value)) return value;
+                                        // Otherwise, parse and return (removes trailing zeros automatically)
+                                        return parseFloat(value.toFixed(6).replace(/\.?0+$/, ''));
+                                    };
+                                    const ingredientAmount = formatAmount(ingredientAmountRaw);
+                                    
+                                    // Get ingredient_price from selectedRecipe if in view mode
+                                    const recipeIngredient = !editMode && selectedRecipe?.ingredients?.find((ing: RecipeIngredient) => ing.id === ingredientId);
+                                    const ingredientPrice = recipeIngredient && typeof recipeIngredient !== 'boolean' ? recipeIngredient.ingredient_price : undefined;
+
+                                    // Get available display units based on ingredient unit type
+                                    const getDisplayUnitOptions = () => {
+                                        if (ingredientUnit === 'g') {
+                                            return [
+                                                { label: 'кг', value: 'kg' },
+                                                { label: 'г', value: 'g' },
+                                            ];
+                                        } else if (ingredientUnit === 'l') {
+                                            return [
+                                                { label: 'л', value: 'l' },
+                                                { label: 'мл', value: 'ml' },
+                                            ];
+                                        } else {
+                                            return [
+                                                { label: 'шт', value: 'pcs' },
+                                            ];
+                                        }
+                                    };
 
                                     return (
                                         <Space key={key} style={{display: 'flex', marginBottom: 8}} align="baseline">
@@ -349,12 +411,33 @@ const RecipesPage = () => {
                                                             filterOption={(input, option) =>
                                                                 option?.label?.toLowerCase().includes(input.toLowerCase())
                                                             }
+                                                            onChange={() => {
+                                                                // Reset display_unit when ingredient changes
+                                                                form.setFieldValue(['ingredients', name, 'display_unit'], undefined);
+                                                            }}
                                                         />
                                                     </Form.Item>
                                                     <Form.Item {...restField} name={[name, 'ingredient_amount']}
                                                                rules={[{required: true}]}>
-                                                        <InputNumber min={0} placeholder="Количество"/>
+                                                        <InputNumber 
+                                                            min={0} 
+                                                            step={0.001} 
+                                                            precision={6}
+                                                            placeholder="Количество" 
+                                                            style={{width: 120}}
+                                                        />
                                                     </Form.Item>
+                                                    {selectedIngredient && (
+                                                        <Form.Item {...restField} name={[name, 'display_unit']}>
+                                                            <Select placeholder="Единица" style={{width: 100}}>
+                                                                {getDisplayUnitOptions().map(opt => (
+                                                                    <Select.Option key={opt.value} value={opt.value}>
+                                                                        {opt.label}
+                                                                    </Select.Option>
+                                                                ))}
+                                                            </Select>
+                                                        </Form.Item>
+                                                    )}
                                                     <Button type="link" danger onClick={() => remove(name)}>
                                                         Удалить
                                                     </Button>
@@ -365,7 +448,12 @@ const RecipesPage = () => {
                                                         width: 180,
                                                         display: 'inline-block'
                                                     }}>{ingredientName}</Text>
-                                                    <Text>{ingredientAmount}</Text>
+                                                    <Text style={{width: 120}}>{ingredientAmount} {displayUnit || ingredientUnit}</Text>
+                                                    {ingredientPrice && (
+                                                        <Text style={{width: 100, textAlign: 'right', fontWeight: 500}}>
+                                                            ${parseFloat(ingredientPrice).toFixed(2)}
+                                                        </Text>
+                                                    )}
                                                 </>
                                             )}
                                         </Space>

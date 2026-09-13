@@ -1,4 +1,4 @@
-﻿export default [
+export default [
   {
     path: '/user',
     layout: false,
@@ -13,14 +13,19 @@
   {
     path: '/recipes',
     name: 'Recipes',
-    icon: 'smile',
+    icon: 'book',
     component: './RecipesPage',
+  },
+  {
+    path: '/recipes/:id',
+    layout: false,
+    component: './RecipeDetail',
   },
   {
     path: '/ingredients',
     name: 'Ingredients',
-    icon: 'table',
-    component: './Welcome',
+    icon: 'apple',
+    component: './Ingredients',
   },
   {
     path: '/',

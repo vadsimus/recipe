@@ -1,34 +1,17 @@
-import { GithubOutlined } from '@ant-design/icons';
-import { DefaultFooter } from '@ant-design/pro-components';
 import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <DefaultFooter
+    <div
       style={{
-        background: 'none',
+        textAlign: 'center',
+        padding: '20px 0',
+        color: '#8A7F70',
+        fontSize: 13,
       }}
-      links={[
-        {
-          key: 'Ant Design Pro',
-          title: 'Ant Design Pro',
-          href: 'https://pro.ant.design',
-          blankTarget: true,
-        },
-        {
-          key: 'github',
-          title: <GithubOutlined />,
-          href: 'https://github.com/ant-design/ant-design-pro',
-          blankTarget: true,
-        },
-        {
-          key: 'Ant Design',
-          title: 'Ant Design',
-          href: 'https://ant.design',
-          blankTarget: true,
-        },
-      ]}
-    />
+    >
+      Your Recipe © {new Date().getFullYear()}
+    </div>
   );
 };
 

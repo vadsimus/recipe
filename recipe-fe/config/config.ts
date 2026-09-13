@@ -1,7 +1,7 @@
 // https://umijs.org/config/
 import { defineConfig } from '@umijs/max';
 import { join } from 'path';
-import defaultSettings from './defaultSettings';
+import defaultSettings, { brand } from './defaultSettings';
 import proxy from './proxy';
 import routes from './routes';
 
@@ -48,7 +48,44 @@ export default defineConfig({
     // default true, when it is true, will use `navigator.language` overwrite default
     baseNavigator: true,
   },
-  antd: {},
+  antd: {
+    theme: {
+      token: {
+        colorPrimary: brand.primary,
+        colorInfo: brand.primary,
+        colorSuccess: brand.accent,
+        colorLink: brand.primary,
+        colorBgLayout: brand.bgLayout,
+        borderRadius: 10,
+        fontFamily:
+          "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+      },
+      components: {
+        Button: {
+          controlHeight: 38,
+          fontWeight: 500,
+        },
+        Card: {
+          borderRadiusLG: 16,
+        },
+        Modal: {
+          borderRadiusLG: 16,
+        },
+        Drawer: {
+          borderRadiusLG: 16,
+        },
+        Input: {
+          controlHeight: 38,
+        },
+        Select: {
+          controlHeight: 38,
+        },
+        Layout: {
+          headerBg: '#FFFFFF',
+        },
+      },
+    },
+  },
   request: {},
   access: {},
   headScripts: [

@@ -1,4 +1,3 @@
-import { QuestionCircleOutlined } from '@ant-design/icons';
 import { setLocale, getLocale } from '@umijs/max';
 import React, { useState } from 'react';
 import { Dropdown } from 'antd';
@@ -81,21 +80,5 @@ export const SelectLang = () => {
         </svg>
       </span>
     </Dropdown>
-  );
-};
-
-export const Question = () => {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        height: 26,
-      }}
-      onClick={() => {
-        window.open('https://pro.ant.design/docs/getting-started');
-      }}
-    >
-      <QuestionCircleOutlined />
-    </div>
   );
 };

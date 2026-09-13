@@ -1,6 +1,6 @@
 import { outLogin } from '@/services/ant-design-pro/api';
 import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
-import { history, useModel } from '@umijs/max';
+import { history, useIntl, useModel } from '@umijs/max';
 import { Spin } from 'antd';
 import type { MenuProps } from 'antd';
 import { createStyles } from 'antd-style';
@@ -70,6 +70,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
     }
   };
   const { styles } = useStyles();
+  const intl = useIntl();
 
   const { initialState, setInitialState } = useModel('@@initialState');
 
@@ -127,7 +128,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: intl.formatMessage({ id: 'menu.account.logout' }),
     },
   ];
 

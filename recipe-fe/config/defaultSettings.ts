@@ -1,27 +1,53 @@
 import type { ProLayoutProps } from '@ant-design/pro-components';
 
+/** Brand palette for "Your Recipe" — warm, food-forward, and calm. */
+export const brand = {
+  primary: '#E8590C',
+  primaryHover: '#F3752B',
+  primaryActive: '#C94A09',
+  accent: '#2F9E44',
+  bgLayout: '#FBF7F2',
+  bgContainer: '#FFFFFF',
+  textHeading: '#2B2118',
+};
+
 /**
- * @name
+ * @name ProLayout shell configuration
  */
 const Settings: ProLayoutProps & {
   pwa?: boolean;
   logo?: string;
 } = {
   navTheme: 'light',
-  // 拂晓蓝
-  colorPrimary: '#1890ff',
-  layout: 'mix',
+  colorPrimary: brand.primary,
+  layout: 'top',
+  splitMenus: false,
   contentWidth: 'Fluid',
-  fixedHeader: false,
+  fixedHeader: true,
   fixSiderbar: true,
   colorWeak: false,
-  title: 'Ant Design Pro',
-  pwa: true,
-  logo: 'https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg',
+  title: 'Your Recipe',
+  pwa: false,
+  logo: '/logo.svg',
   iconfontUrl: '',
   token: {
-    // 参见ts声明，demo 见文档，通过token 修改样式
-    //https://procomponents.ant.design/components/layout#%E9%80%9A%E8%BF%87-token-%E4%BF%AE%E6%94%B9%E6%A0%B7%E5%BC%8F
+    header: {
+      colorBgHeader: '#FFFFFF',
+      colorHeaderTitle: brand.textHeading,
+      colorTextMenu: '#5B5044',
+      colorTextMenuSecondary: '#8A7F70',
+      colorTextMenuSelected: brand.primary,
+      colorBgMenuItemSelected: 'rgba(232, 89, 12, 0.08)',
+      colorTextMenuActive: brand.primary,
+      colorTextRightActionsItem: '#5B5044',
+      heightLayoutHeader: 64,
+    },
+    sider: {
+      colorMenuBackground: '#FFFFFF',
+    },
+    pageContainer: {
+      colorBgPageContainer: brand.bgLayout,
+    },
   },
 };
 

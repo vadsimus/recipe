@@ -12,7 +12,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'cost', 'unit', 'user')
+    list_display = ('id', 'name', 'cost', 'calories', 'unit', 'user')
     list_filter = ('unit',)
     search_fields = ('name', 'user__username')
 

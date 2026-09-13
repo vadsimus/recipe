@@ -7,6 +7,8 @@ class IngredientInput(BaseModel):
     cost: condecimal(max_digits=20, decimal_places=2)
     unit: Literal['g', 'l', 'pcs'] = 'g'
     cost_unit: Literal['1kg', '100g', '500g', '1l', '100ml', '500ml', '1pcs', '10pcs'] = '1kg'
+    calories: condecimal(max_digits=20, decimal_places=2) = 0
+    calories_unit: Literal['1kg', '100g', '500g', '1l', '100ml', '500ml', '1pcs', '10pcs'] = '1kg'
 
 
 class IngredientRecipeInput(BaseModel):

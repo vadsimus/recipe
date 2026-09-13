@@ -9,7 +9,7 @@ class Ingredient(models.Model):
         GRAM = 'g', 'grams'
         PIECE = 'pcs', 'pieces'
 
-    class CostUnit(models.TextChoices):
+    class MeasurementUnit(models.TextChoices):
         # Weight units
         KG_1 = '1kg', '1 kg'
         G_100 = '100g', '100 g'
@@ -24,10 +24,13 @@ class Ingredient(models.Model):
 
     name = models.CharField(max_length=100)
     cost = models.DecimalField(decimal_places=2, max_digits=20, default=0)
+    calories = models.DecimalField(decimal_places=2, max_digits=20, default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ingredients')
     unit = models.CharField(max_length=3, choices=Unit.choices, default=Unit.GRAM)
-    cost_unit = models.CharField(max_length=10, choices=CostUnit.choices, default=CostUnit.KG_1, 
+    cost_unit = models.CharField(max_length=10, choices=MeasurementUnit.choices, default=MeasurementUnit.KG_1,
                                   help_text='The unit for which the cost is specified')
+    calories_unit = models.CharField(max_length=10, choices=MeasurementUnit.choices, default=MeasurementUnit.KG_1,
+                                      help_text='The unit for which the calories are specified')
 
     class Meta:
         unique_together = ('name', 'unit', 'user')

@@ -42,20 +42,21 @@ def get_base_unit(unit: str) -> str:
         raise ValueError(f"Unknown unit: {unit}")
 
 
-def convert_to_base_unit(from_unit: str) -> Decimal:
+def convert_to_base_unit(amount: Decimal, from_unit: str) -> Decimal:
     """
     Convert an amount from a given unit to the base unit.
-    
+
     Args:
+        amount: The amount to convert
         from_unit: The unit to convert from (e.g., 'g', 'ml', '100g', '1l')
-    
+
     Returns:
         The amount in base units (kg for weight, L for volume, pcs for pieces)
     """
     if from_unit not in CONVERSION_FACTORS:
         raise ValueError(f"Unknown unit: {from_unit}")
-    
-    return CONVERSION_FACTORS[from_unit]
+
+    return amount * CONVERSION_FACTORS[from_unit]
 
 
 def convert_from_base_unit(amount: Decimal, to_unit: str) -> Decimal:
@@ -78,39 +79,25 @@ def convert_from_base_unit(amount: Decimal, to_unit: str) -> Decimal:
     return amount / factor
 
 
-def get_cost_per_base_unit(cost: Decimal, cost_unit: str) -> Decimal:
+def get_value_per_base_unit(value: Decimal, value_unit: str) -> Decimal:
     """
-    Calculate the cost per base unit (kg, L, or pcs).
-    
+    Calculate a per-base-unit value (kg, L, or pcs) for a value given for a
+    reference unit (e.g., cost given per '100g', or calories given per '1l').
+
     Args:
-        cost: The cost for the cost_unit
-        cost_unit: The unit the cost is specified for (e.g., '1kg', '100g', '1l', '100ml')
-    
+        value: The value for the value_unit (e.g., a cost or a calorie count)
+        value_unit: The unit the value is specified for (e.g., '1kg', '100g', '1l', '100ml')
+
     Returns:
-        Cost per base unit
+        The value per base unit
     """
-    # Extract the amount from cost_unit (e.g., '1kg' -> 1, '100g' -> 100)
-    if cost_unit.startswith('1'):
-        if cost_unit.endswith('kg') or cost_unit.endswith('l') or cost_unit.endswith('pcs'):
-            amount_in_unit = Decimal('1')
-        else:
-            # Handle cases like '100g', '500ml', etc.
-            amount_in_unit = Decimal(cost_unit.replace('g', '').replace('ml', '').replace('pcs', ''))
-    else:
-        # Extract numeric part
-        numeric_part = ''.join(filter(str.isdigit, cost_unit))
-        if numeric_part:
-            amount_in_unit = Decimal(numeric_part)
-        else:
-            amount_in_unit = Decimal('1')
-    
-    # Convert the amount to base unit
-    base_amount = convert_to_base_unit(cost_unit)
+    # Convert "1 value_unit" to base unit (e.g., '100g' -> 0.1 kg)
+    base_amount = convert_to_base_unit(Decimal('1'), value_unit)
 
     if base_amount == 0:
         return Decimal('0')
-    
-    return cost / base_amount
+
+    return value / base_amount
 
 
 def calculate_ingredient_price(
@@ -132,11 +119,11 @@ def calculate_ingredient_price(
         The calculated price
     """
     # Get cost per base unit
-    cost_per_base = get_cost_per_base_unit(cost, cost_unit)
-    
+    cost_per_base = get_value_per_base_unit(cost, cost_unit)
+
     # Convert amount to base unit
-    amount_in_base = convert_to_base_unit(amount_unit)
-    
+    amount_in_base = convert_to_base_unit(amount, amount_unit)
+
     # Calculate price
     return cost_per_base * amount_in_base
 

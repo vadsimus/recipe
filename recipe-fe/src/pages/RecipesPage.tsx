@@ -32,6 +32,8 @@ interface RecipeIngredient {
     unit: string;
     ingredient_amount: number;
     ingredient_price: string;
+    calories: string;
+    ingredient_calories: string;
 }
 
 interface Recipe {
@@ -41,6 +43,7 @@ interface Recipe {
     image?: string;
     ingredients: RecipeIngredient[];
     total_price: string;
+    total_calories: string;
 }
 
 const RecipesPage = () => {
@@ -220,6 +223,7 @@ const RecipesPage = () => {
         }
     }
     const totalPrice = form.getFieldValue('total_price') || selectedRecipe?.total_price || '0';
+    const totalCalories = form.getFieldValue('total_calories') || selectedRecipe?.total_calories || '0';
 
 
     return (
@@ -246,7 +250,7 @@ const RecipesPage = () => {
                             }
                             onClick={() => openViewModal(recipe)}
                         >
-                            <Card.Meta title={recipe.name} description={`Стоимость: ${recipe.total_price}`}/>
+                            <Card.Meta title={recipe.name} description={`Стоимость: ${recipe.total_price} · Калории: ${recipe.total_calories}`}/>
                         </Card>
                     </Col>
                 ))}
@@ -345,6 +349,7 @@ const RecipesPage = () => {
                                 <Text style={{width: 180, fontWeight: 600}}>Ингредиент</Text>
                                 <Text style={{width: 120, fontWeight: 600}}>Количество</Text>
                                 <Text style={{width: 100, textAlign: 'right', fontWeight: 600}}>Цена</Text>
+                                <Text style={{width: 100, textAlign: 'right', fontWeight: 600}}>Калории</Text>
                             </Space>
                         </div>
                     )}
@@ -371,9 +376,10 @@ const RecipesPage = () => {
                                     };
                                     const ingredientAmount = formatAmount(ingredientAmountRaw);
                                     
-                                    // Get ingredient_price from selectedRecipe if in view mode
+                                    // Get ingredient_price/ingredient_calories from selectedRecipe if in view mode
                                     const recipeIngredient = !editMode && selectedRecipe?.ingredients?.find((ing: RecipeIngredient) => ing.id === ingredientId);
                                     const ingredientPrice = recipeIngredient && typeof recipeIngredient !== 'boolean' ? recipeIngredient.ingredient_price : undefined;
+                                    const ingredientCalories = recipeIngredient && typeof recipeIngredient !== 'boolean' ? recipeIngredient.ingredient_calories : undefined;
 
                                     // Get available display units based on ingredient unit type
                                     const getDisplayUnitOptions = () => {
@@ -454,6 +460,11 @@ const RecipesPage = () => {
                                                             ${parseFloat(ingredientPrice).toFixed(2)}
                                                         </Text>
                                                     )}
+                                                    {ingredientCalories && (
+                                                        <Text style={{width: 100, textAlign: 'right', fontWeight: 500}}>
+                                                            {parseFloat(ingredientCalories).toFixed(2)} ккал
+                                                        </Text>
+                                                    )}
                                                 </>
                                             )}
                                         </Space>
@@ -478,6 +489,8 @@ const RecipesPage = () => {
                         </Form.Item>
                     )}
                     <Text style={{fontWeight: 'bold'}}>Стоимость: ${totalPrice}</Text>
+                    <br/>
+                    <Text style={{fontWeight: 'bold'}}>Калории: {totalCalories} ккал</Text>
                 </Form>
             </Modal>
         </>

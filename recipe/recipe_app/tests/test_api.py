@@ -59,7 +59,7 @@ def test_token_obtain(base_url, user_credentials):
 
 def test_create_ingredient(base_url, auth_headers):
     url = f"{base_url}/api/ingredients/"
-    payload = {"name": "Sugar", "cost": 2.5}
+    payload = {"name": "Sugar", "cost": 2.5, "calories": 400, "calories_unit": "100g"}
     resp = requests.post(url, json=payload, headers=auth_headers)
     assert resp.status_code == 201, f"Ingredient creation error: {resp.text}"
 
@@ -68,11 +68,13 @@ def test_create_ingredient(base_url, auth_headers):
     assert get_resp.status_code == 200, f"Ingredient retrieval error: {get_resp.text}"
     data = get_resp.json()["data"]
     assert any(ing["name"] == "Sugar" and float(ing["cost"]) == 2.5 for ing in data)
+    # calories was given per 100g -> stored per base unit (1kg) -> 400 * 10 = 4000
+    assert any(ing["name"] == "Sugar" and float(ing["calories"]) == 4000 and ing["calories_unit"] == "1kg" for ing in data)
 
 
 def test_create_recipe(base_url, auth_headers):
     ing_url = f"{base_url}/api/ingredients/"
-    ing_payload = {"name": "Flour", "cost": 1.0}
+    ing_payload = {"name": "Flour", "cost": 1.0, "calories": 340, "calories_unit": "100g"}
     requests.post(ing_url, json=ing_payload, headers=auth_headers)
 
     ingredients = requests.get(ing_url, headers=auth_headers).json()["data"]
@@ -97,9 +99,13 @@ def test_create_recipe(base_url, auth_headers):
     assert item["id"] == flour["id"]
     assert item["name"] == "Flour"
     assert float(item["cost"]) == 1.0
-    assert item["ingredient_amount"] == 1.0
-    assert float(item["ingredient_price"]) == 0
-    assert float(data["total_price"]) == 0
+    # 500 g of an ingredient priced at 1.0/kg -> 500 g displayed, 0.5 worth of cost
+    assert item["ingredient_amount"] == pytest.approx(500.0)
+    assert float(item["ingredient_price"]) == pytest.approx(0.5)
+    assert float(data["total_price"]) == pytest.approx(0.5)
+    # 340 kcal/100g -> 3400 kcal/kg -> 500 g -> 1700 kcal
+    assert float(item["ingredient_calories"]) == pytest.approx(1700)
+    assert float(data["total_calories"]) == pytest.approx(1700)
 
 
 def test_list_recipes_with_ingredients(base_url, auth_headers):
@@ -114,12 +120,15 @@ def test_list_recipes_with_ingredients(base_url, auth_headers):
         assert "description" in recipe
         assert "ingredients" in recipe
         assert "total_price" in recipe
+        assert "total_calories" in recipe
         for ing in recipe["ingredients"]:
             assert "id" in ing
             assert "name" in ing
             assert "cost" in ing
             assert "ingredient_amount" in ing
             assert "ingredient_price" in ing
+            assert "calories" in ing
+            assert "ingredient_calories" in ing
 
 
 def test_upload_recipe_image(base_url, auth_headers):
@@ -143,6 +152,7 @@ def test_upload_recipe_image(base_url, auth_headers):
     d = j["data"]
     assert "ingredients" in d and isinstance(d["ingredients"], list)
     assert float(d["total_price"]) == pytest.approx(0.0)
+    assert float(d["total_calories"]) == pytest.approx(0.0)
     assert "image" in d and d["image"]
 
 
@@ -153,7 +163,7 @@ def test_edit_recipe(base_url, auth_headers):
     rid = cre.json()["data"]["id"]
 
     ing_url = f"{base_url}/api/ingredients/"
-    ing_payload = {"name": "Milk", "cost": 1.5}
+    ing_payload = {"name": "Milk", "cost": 1.5, "calories": 42, "calories_unit": "100g"}
     requests.post(ing_url, json=ing_payload, headers=auth_headers)
     milk = next(ing for ing in requests.get(ing_url, headers=auth_headers).json()["data"] if ing["name"] == "Milk")
 
@@ -172,6 +182,10 @@ def test_edit_recipe(base_url, auth_headers):
     assert len(d["ingredients"]) == 1
     item = d["ingredients"][0]
     assert item["name"] == "Milk"
-    assert item["ingredient_amount"] == 1.0
-    assert float(item["ingredient_price"]) == 0
+    # 200 g of an ingredient priced at 1.5/kg -> 200 g displayed, 0.3 worth of cost
+    assert item["ingredient_amount"] == pytest.approx(200.0)
+    assert float(item["ingredient_price"]) == pytest.approx(0.3)
     assert pytest.approx(float(item["ingredient_price"])) == float(d["total_price"])
+    # 42 kcal/100g -> 420 kcal/kg -> 200 g -> 84 kcal
+    assert float(item["ingredient_calories"]) == pytest.approx(84)
+    assert pytest.approx(float(item["ingredient_calories"])) == float(d["total_calories"])

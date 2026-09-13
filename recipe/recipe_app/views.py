@@ -45,7 +45,13 @@ class IngredientListCreateView(PydanticAPIView):
         queryset = Ingredient.objects.filter(user=request.user)
         if name:
             queryset = queryset.filter(name__icontains=name)
-        output = [IngredientResponse(id=i.id, name=i.name, cost=i.cost, unit=i.unit, cost_unit=i.cost_unit) for i in queryset]
+        output = [
+            IngredientResponse(
+                id=i.id, name=i.name, cost=i.cost, unit=i.unit, cost_unit=i.cost_unit,
+                calories=i.calories, calories_unit=i.calories_unit,
+            )
+            for i in queryset
+        ]
         response_data = IngredientListResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"))
 
@@ -57,30 +63,30 @@ class IngredientListCreateView(PydanticAPIView):
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        from recipe_app.utils.unit_converter import get_cost_per_base_unit, get_base_unit
+        from recipe_app.utils.unit_converter import get_value_per_base_unit, get_base_unit
         from decimal import Decimal
-        
+
         data = request.pydantic.model_dump(mode="json")
+        base_unit_type = get_base_unit(data['unit'])
+        base_cost_unit = {'kg': '1kg', 'L': '1l', 'pcs': '1pcs'}[base_unit_type]
+
         # Convert cost to base unit before storing
         user_cost = Decimal(str(data['cost']))
-        user_cost_unit = data['cost_unit']
-        base_unit_type = get_base_unit(data['unit'])
-        
-        # Calculate cost per base unit (e.g., cost per 1kg, 1L, or 1pcs)
-        cost_per_base = get_cost_per_base_unit(user_cost, user_cost_unit)
-        
-        # Store cost in base unit and set cost_unit to base unit
+        cost_per_base = get_value_per_base_unit(user_cost, data['cost_unit'])
         data['cost'] = cost_per_base
-        # Set cost_unit to base unit format (1kg, 1l, or 1pcs)
-        if base_unit_type == 'kg':
-            data['cost_unit'] = '1kg'
-        elif base_unit_type == 'L':
-            data['cost_unit'] = '1l'
-        else:  # pcs
-            data['cost_unit'] = '1pcs'
-        
+        data['cost_unit'] = base_cost_unit
+
+        # Convert calories to base unit before storing
+        user_calories = Decimal(str(data['calories']))
+        calories_per_base = get_value_per_base_unit(user_calories, data['calories_unit'])
+        data['calories'] = calories_per_base
+        data['calories_unit'] = base_cost_unit
+
         ingredient = Ingredient.objects.create(user=request.user, **data)
-        output = IngredientResponse(id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit, cost_unit=ingredient.cost_unit)
+        output = IngredientResponse(
+            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit,
+            cost_unit=ingredient.cost_unit, calories=ingredient.calories, calories_unit=ingredient.calories_unit,
+        )
         response_data = IngredientCreateResponse(result="ok", data=output)
         return Response(response_data.model_dump(mode="json"), status=status.HTTP_201_CREATED)
 
@@ -119,34 +125,30 @@ class IngredientDetailView(APIView):
         except ValidationError as e:
             return Response({'error': e.errors()}, status=status.HTTP_400_BAD_REQUEST)
 
-        from recipe_app.utils.unit_converter import get_cost_per_base_unit, get_base_unit
+        from recipe_app.utils.unit_converter import get_value_per_base_unit, get_base_unit
         from decimal import Decimal
-        
+
         ingredient.name = validated.name
         ingredient.unit = validated.unit
-        
+
+        base_unit_type = get_base_unit(validated.unit)
+        base_cost_unit = {'kg': '1kg', 'L': '1l', 'pcs': '1pcs'}[base_unit_type]
+
         # Convert cost to base unit before storing
         user_cost = Decimal(str(validated.cost))
-        user_cost_unit = validated.cost_unit
-        base_unit_type = get_base_unit(validated.unit)
-        
-        # Calculate cost per base unit (e.g., cost per 1kg, 1L, or 1pcs)
-        cost_per_base = get_cost_per_base_unit(user_cost, user_cost_unit)
-        
-        # Store cost in base unit and set cost_unit to base unit
-        ingredient.cost = cost_per_base
-        # Set cost_unit to base unit format (1kg, 1l, or 1pcs)
-        if base_unit_type == 'kg':
-            ingredient.cost_unit = '1kg'
-        elif base_unit_type == 'L':
-            ingredient.cost_unit = '1l'
-        else:  # pcs
-            ingredient.cost_unit = '1pcs'
-        
+        ingredient.cost = get_value_per_base_unit(user_cost, validated.cost_unit)
+        ingredient.cost_unit = base_cost_unit
+
+        # Convert calories to base unit before storing
+        user_calories = Decimal(str(validated.calories))
+        ingredient.calories = get_value_per_base_unit(user_calories, validated.calories_unit)
+        ingredient.calories_unit = base_cost_unit
+
         ingredient.save()
 
         response = IngredientResponse(
-            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit, cost_unit=ingredient.cost_unit
+            id=ingredient.id, name=ingredient.name, cost=ingredient.cost, unit=ingredient.unit,
+            cost_unit=ingredient.cost_unit, calories=ingredient.calories, calories_unit=ingredient.calories_unit,
         )
         return Response(response.model_dump(mode="json"), status=status.HTTP_200_OK)
 
@@ -202,7 +204,7 @@ class RecipeListCreateView(PydanticAPIView):
             
             # Convert to base unit for storage
             base_unit = get_base_unit(ingredient.unit)
-            amount_in_base = convert_to_base_unit(display_unit)
+            amount_in_base = convert_to_base_unit(amount, display_unit)
             
             IngredientRecipe.objects.create(
                 recipe=recipe,
@@ -258,8 +260,8 @@ class RecipeDetailView(PydanticAPIView):
             display_unit = ingr_data.get("display_unit") or ingredient.unit
             
             # Convert to base unit for storage
-            amount_in_base = convert_to_base_unit(display_unit)
-            
+            amount_in_base = convert_to_base_unit(amount, display_unit)
+
             IngredientRecipe.objects.create(
                 recipe=recipe,
                 ingredient=ingredient,
@@ -298,7 +300,7 @@ class RecipeDetailView(PydanticAPIView):
                 display_unit = ingr_data.get("display_unit") or ingredient.unit
                 
                 # Convert to base unit for storage
-                amount_in_base = convert_to_base_unit(display_unit)
+                amount_in_base = convert_to_base_unit(amount, display_unit)
                 
                 IngredientRecipe.objects.create(
                     recipe=recipe,

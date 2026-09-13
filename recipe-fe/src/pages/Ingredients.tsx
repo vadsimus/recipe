@@ -9,6 +9,8 @@ interface Ingredient {
   cost: string;
   unit: string;
   cost_unit: string;
+  calories: string;
+  calories_unit: string;
 }
 
 const IngredientsPage = () => {
@@ -24,6 +26,7 @@ const IngredientsPage = () => {
     form.setFieldsValue({
       unit: 'g',
       cost_unit: '1kg',
+      calories_unit: '1kg',
     });
     setModalVisible(true);
   };
@@ -35,6 +38,8 @@ const IngredientsPage = () => {
       cost: parseFloat(ingredient.cost),
       unit: ingredient.unit,
       cost_unit: ingredient.cost_unit || '1kg',
+      calories: parseFloat(ingredient.calories),
+      calories_unit: ingredient.calories_unit || '1kg',
     });
     setModalVisible(true);
   };
@@ -102,6 +107,11 @@ const IngredientsPage = () => {
             render: (cost, record) => `${cost} за ${record.cost_unit || '1kg'}`,
           },
           {
+            title: 'Калории',
+            dataIndex: 'calories',
+            render: (calories, record) => `${calories} ккал за ${record.calories_unit || '1kg'}`,
+          },
+          {
             title: 'Действия',
             valueType: 'option',
             render: (_, record) => [
@@ -160,6 +170,29 @@ const IngredientsPage = () => {
             name="cost_unit"
             label="Стоимость за"
             rules={[{ required: true, message: 'Выберите единицу стоимости' }]}
+          >
+            <Select>
+              <Select.Option value="1kg">1 кг</Select.Option>
+              <Select.Option value="100g">100 г</Select.Option>
+              <Select.Option value="500g">500 г</Select.Option>
+              <Select.Option value="1l">1 л</Select.Option>
+              <Select.Option value="100ml">100 мл</Select.Option>
+              <Select.Option value="500ml">500 мл</Select.Option>
+              <Select.Option value="1pcs">1 штука</Select.Option>
+              <Select.Option value="10pcs">10 штук</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="calories"
+            label="Калории"
+            rules={[{ required: true, message: 'Введите калорийность' }]}
+          >
+            <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="calories_unit"
+            label="Калории за"
+            rules={[{ required: true, message: 'Выберите единицу калорийности' }]}
           >
             <Select>
               <Select.Option value="1kg">1 кг</Select.Option>

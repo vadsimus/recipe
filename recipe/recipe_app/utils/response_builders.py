@@ -19,14 +19,17 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
         # Cost is already stored per base unit (e.g., cost per 1kg, 1L, or 1pcs)
         # cost_unit is always "1kg", "1l", or "1pcs" after conversion
         cost_per_base = Decimal(str(ingredient.cost))
-        
+        # Calories are stored the same way: calories per base unit
+        calories_per_base = Decimal(str(ingredient.calories))
+
         # Amount is stored in base unit (kg, L, or pcs)
         amount_in_base = Decimal(str(ir.ingredient_amount))
-        
-        # Calculate price: cost_per_base * amount_in_base
+
+        # Calculate price and calories: value_per_base * amount_in_base
         # Since both are in base units, we can directly multiply
         price = cost_per_base * amount_in_base
-        
+        calories = calories_per_base * amount_in_base
+
         # Get display amount (convert from base if display_unit is specified)
         display_amount = amount_in_base
         display_unit = ir.display_unit or ingredient.unit
@@ -43,10 +46,13 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
                 unit=display_unit,  # Show display unit
                 ingredient_amount=float(display_amount),  # Show converted amount
                 ingredient_price=round_decimal(price),
+                calories=ingredient.calories,
+                ingredient_calories=round_decimal(calories),
             )
         )
 
     total = sum(i.ingredient_price for i in ingredients_data)
+    total_calories = sum(i.ingredient_calories for i in ingredients_data)
     return RecipeResponse(
         id=recipe.id,
         name=recipe.name,
@@ -54,4 +60,5 @@ def build_recipe_response(recipe: Recipe, request) -> RecipeResponse:
         image=recipe.image.url if recipe.image else None,
         ingredients=ingredients_data,
         total_price=total,
+        total_calories=total_calories,
     )

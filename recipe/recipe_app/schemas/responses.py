@@ -14,6 +14,8 @@ class IngredientResponse(BaseModel):
     cost: condecimal(max_digits=20, decimal_places=2)
     unit: str
     cost_unit: str
+    calories: condecimal(max_digits=20, decimal_places=2)
+    calories_unit: str
 
 
 class IngredientListResponse(APIResponse):
@@ -31,6 +33,8 @@ class RecipeIngredientResponse(BaseModel):
     unit: str
     ingredient_amount: float  # Changed to float to support decimal amounts
     ingredient_price: condecimal(max_digits=20, decimal_places=2)
+    calories: condecimal(max_digits=20, decimal_places=2)
+    ingredient_calories: condecimal(max_digits=20, decimal_places=2)
 
 
 class RecipeResponse(BaseModel):
@@ -40,6 +44,7 @@ class RecipeResponse(BaseModel):
     image: Optional[str] = None
     ingredients: List[RecipeIngredientResponse]
     total_price: condecimal(max_digits=20, decimal_places=2)
+    total_calories: condecimal(max_digits=20, decimal_places=2)
 
 
 class RecipeListResponse(APIResponse):
